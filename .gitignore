@@ -1,2 +1,12 @@
-**/server
-**/client
+# Project
+/server
+/client
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+#Ide
+*.json

@@ -5,7 +5,8 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <string>
-
+#include <filesystem>
+#define DIR_NAME "sync_dir"
 using namespace std;
 
 Client::Client() : clientSocket(-1)
@@ -44,6 +45,12 @@ bool Client::connectToServer(const string &serverIP, int serverPort)
     return true;
 }
 
+void Client::createSyncDir()
+{
+    if (!std::filesystem::exists(DIR_NAME))
+        std::filesystem::create_directory(DIR_NAME);
+}
+
 void Client::setUsername(const string &user)
 {
     username = user;
@@ -62,8 +69,14 @@ void Client::sendMessage()
             cout << "Encerrando conexão..." << endl;
             break;
         }
-        
+
         string fullMessage = username + ": " + message;
         send(clientSocket, fullMessage.c_str(), fullMessage.size(), 0);
     }
+}
+
+bool Client::run(const string &serverIP, int serverPort)
+{
+    createSyncDir();
+    return connectToServer(serverIP, serverPort);
 }

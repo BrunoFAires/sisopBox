@@ -11,13 +11,14 @@ private:
     string username;
     int clientSocket;
     struct sockaddr_in serverAddress;
-
+    bool connectToServer(const std::string &serverIP, int serverPort);
+    void createSyncDir();
 public:
     Client();
     ~Client();
-    bool connectToServer(const std::string &serverIP, int serverPort);
     void setUsername(const std::string &user); 
     void sendMessage();
+    bool run(const string &serverIP, int serverPort);
 };
 
 #endif

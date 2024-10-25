@@ -10,3 +10,5 @@
 
 #Ide
 *.json
+
+**/sync_dir

@@ -45,11 +45,21 @@ bool Client::connectToServer(const string &serverIP, int serverPort)
         return false;
     }
 
-    cout << "Conectado ao servidor!" << endl;
-
     string message = format("startup: {}", username);
 
     send(clientSocket, message.c_str(), message.size(), 0);
+
+    string reply = "startup";
+
+    int result = recv(clientSocket, &reply, reply.size(), 0);
+
+    if (result != 7)
+    {
+        cerr << "Erro ao conectar ao servidor." << endl;
+        return false;
+    }
+
+    cout << "Conectado ao servidor!" << endl;
 
     return true;
 }

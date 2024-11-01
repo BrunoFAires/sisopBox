@@ -79,6 +79,11 @@ void Server::handle_client_activity(int socket_id)
         if (bytesReceived <= 0)
         {
             cout << "Conexão com o cliente encerrada ou erro." << endl;
+
+            string client_name = global_settings::socket_id_dictionary.get(socket_id);
+
+            bool success = global_settings::disconnect_client(socket_id, client_name);
+
             break;
         }
         else
@@ -92,6 +97,21 @@ void Server::handle_client_activity(int socket_id)
                 string client_name = (pos != std::string::npos) ? message.substr(pos + 1) : "";
              
                 bool success = global_settings::connect_client(socket_id, client_name);
+
+                string reply;
+
+                if (success)
+                {
+                    reply = "startup";
+
+                    send(socket_id, reply.c_str(), reply.size(), 0);
+                }
+                else
+                {
+                    reply = "startup";
+
+                    send(socket_id, reply.c_str(), reply.size(), 0);
+                }
             }
             else if (message.starts_with("exit: "))
             {

@@ -7,9 +7,10 @@
 #include <format>
 
 #include <Server.h>
+#include <Packet.h>
 #include <global_settings.h>
 
-#define PORT 5002
+#define PORT 5000
 
 using namespace std;
 
@@ -74,8 +75,7 @@ void Server::handle_client_activity(int socket_id)
     while (true)
     {
         memset(buffer, 0, sizeof(buffer));
-        ssize_t bytesReceived = recv(socket_id, buffer, sizeof(buffer) - 1, 0);
-
+        ssize_t bytesReceived = recv(socket_id, buffer, sizeof(buffer), 0);
         if (bytesReceived <= 0)
         {
             cout << "Conexão com o cliente encerrada ou erro." << endl;
@@ -88,42 +88,26 @@ void Server::handle_client_activity(int socket_id)
         }
         else
         {
-            string message(buffer);
+            Packet receivedPacket;
+            receivedPacket.deserialize(buffer);
+            
 
-            if (message.starts_with("startup: "))
+            if (receivedPacket.isConnectionPacket())
             {
-                size_t pos = message.find(' ');
-
-                string client_name = (pos != std::string::npos) ? message.substr(pos + 1) : "";
-             
-                bool success = global_settings::connect_client(socket_id, client_name);
-
-                string reply;
-
-                if (success)
+                bool success = global_settings::connect_client(socket_id, receivedPacket.getMessage());
+                string message = "Erro ao conectar ao servidor.";
+                Packet replyPacket(1, MessageType::CONNECTION, Status::SUCCESS, message.c_str());
+                if (!success)
                 {
-                    reply = 1;
-
-                    send(socket_id, reply.c_str(), reply.size(), 0);
+                    replyPacket.setStatus(Status::ERROR);
                 }
-                else
-                {
-                    reply = -1;
 
-                    send(socket_id, reply.c_str(), reply.size(), 0);
-                }
+                send(socket_id, replyPacket.serialize(), replyPacket.size(), 0);
             }
-            else if (message.starts_with("exit: "))
+            else if (receivedPacket.isDisconnectionPacket())
             {
-                size_t pos = message.find(' ');
-
-                string client_name = (pos != std::string::npos) ? message.substr(pos + 1) : "";
-
+                string client_name = receivedPacket.getMessage();
                 bool success = global_settings::disconnect_client(socket_id, client_name);
-            }
-            else
-            {
-                cout << buffer << endl;               
             }
         }
     }

@@ -8,6 +8,7 @@
 #include <format>
 
 #include <Client.h>
+#include <Packet.h>
 
 #define DIR_NAME "sync_dir"
 
@@ -45,12 +46,13 @@ bool Client::connectToServer(const string &serverIP, int serverPort)
         return false;
     }
     char reply;
+    // Todo daqui até a linha 70 pode virar um método genérico(de uma outra classe)
+    Packet packet(1, MessageType::CONNECTION, Status::SUCCESS, username.c_str());
+    char buffer[1024]; // TODO deve ser o suficiente por enquanto, mas adequa-lo posteriormente.
 
-    string message = format("startup: {}", username);
+    send(clientSocket, packet.serialize(), packet.size(), 0);
 
-    send(clientSocket, message.c_str(), message.size(), 0);
-
-    int result = recv(clientSocket, &reply, sizeof(reply), 0);
+    int result = recv(clientSocket, &buffer, sizeof(buffer), 0);
 
     if (result <= 0)
     {
@@ -58,7 +60,9 @@ bool Client::connectToServer(const string &serverIP, int serverPort)
         return false;
     }
 
-    if (reply != 1)
+    packet.deserialize(buffer);
+
+    if (packet.isStatusError())
     {
         cerr << "Erro ao conectar ao servidor." << endl;
         return false;
@@ -90,7 +94,10 @@ void Client::sendMessage()
 
         if (message == "exit")
         {
-            message = "exit: " + username;
+            Packet packet(1, MessageType::DISCONNECTION, Status::SUCCESS, username.c_str());
+            send(clientSocket, packet.serialize(), packet.size(), 0);
+
+            send(clientSocket, packet.serialize(), packet.size(), 0);
 
             send(clientSocket, message.c_str(), message.size(), 0);
 
@@ -107,4 +114,8 @@ bool Client::run(const string &serverIP, int serverPort)
 {
     createSyncDir();
     return connectToServer(serverIP, serverPort);
+}
+
+void createPacket()
+{
 }

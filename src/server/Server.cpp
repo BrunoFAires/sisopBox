@@ -102,13 +102,13 @@ void Server::handle_client_activity(int socket_id)
 
                 if (success)
                 {
-                    reply = "startup";
+                    reply = 1;
 
                     send(socket_id, reply.c_str(), reply.size(), 0);
                 }
                 else
                 {
-                    reply = "startup";
+                    reply = -1;
 
                     send(socket_id, reply.c_str(), reply.size(), 0);
                 }

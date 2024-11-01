@@ -44,16 +44,21 @@ bool Client::connectToServer(const string &serverIP, int serverPort)
         cerr << "Erro ao conectar ao servidor." << endl;
         return false;
     }
+    char reply;
 
     string message = format("startup: {}", username);
 
     send(clientSocket, message.c_str(), message.size(), 0);
 
-    string reply = "startup";
+    int result = recv(clientSocket, &reply, sizeof(reply), 0);
 
-    int result = recv(clientSocket, &reply, reply.size(), 0);
+    if (result <= 0)
+    {
+        cerr << "Erro ao receber resposta do servidor." << endl;
+        return false;
+    }
 
-    if (result != 7)
+    if (reply != 1)
     {
         cerr << "Erro ao conectar ao servidor." << endl;
         return false;

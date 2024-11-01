@@ -1,4 +1,3 @@
-#include "Client.h"
 #include <iostream>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -6,7 +5,12 @@
 #include <arpa/inet.h>
 #include <string>
 #include <filesystem>
+#include <format>
+
+#include <Client.h>
+
 #define DIR_NAME "sync_dir"
+
 using namespace std;
 
 Client::Client() : clientSocket(-1)
@@ -42,6 +46,11 @@ bool Client::connectToServer(const string &serverIP, int serverPort)
     }
 
     cout << "Conectado ao servidor!" << endl;
+
+    string message = format("startup: {}", username);
+
+    send(clientSocket, message.c_str(), message.size(), 0);
+
     return true;
 }
 
@@ -66,6 +75,10 @@ void Client::sendMessage()
 
         if (message == "exit")
         {
+            message = "exit: " + username;
+
+            send(clientSocket, message.c_str(), message.size(), 0);
+
             cout << "Encerrando conexão..." << endl;
             break;
         }

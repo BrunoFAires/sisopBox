@@ -1,24 +1,24 @@
-#ifndef SERVER_H
-#define SERVER_H
-
 #include <netinet/in.h>
+#include <optional>
 #include <string>
 #include <vector>
 #include <thread>
 
+using namespace std;
+
 class Server
 {
-private:
-    int serverSocket;
-    struct sockaddr_in serverAddress;
-    std::vector<std::thread> clientThreads;
+    private:
 
-    static void handleClient(int clientSocket);
+        int serverSocket;
+        struct sockaddr_in serverAddress;
+        vector<thread> clientThreads;
 
-public:
-    Server();
-    ~Server();
-    void start();
+        static void handle_client_activity(int socket_id);
+
+    public:
+
+        Server();
+        ~Server();
+        void start();
 };
-
-#endif

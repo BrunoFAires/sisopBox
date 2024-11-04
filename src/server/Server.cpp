@@ -9,7 +9,7 @@
 #include <Packet.h>
 #include <global_settings.h>
 
-#define PORT 5001
+#define PORT 5000
 
 using namespace std;
 
@@ -87,9 +87,6 @@ void Server::handle_client_activity(int socket_id)
         Packet receivedPacket;
         receivedPacket.deserialize(buffer);
 
-        cout << receivedPacket.getMessage() << endl;
-        cout << receivedPacket.getMessageSize() << endl;
-
         if (receivedPacket.isConnectionPacket())
         {
             bool success = global_settings::connect_client(socket_id, receivedPacket.getMessage());
@@ -101,7 +98,8 @@ void Server::handle_client_activity(int socket_id)
         }
         else if (receivedPacket.isDisconnectionPacket())
         {
-            global_settings::disconnect_client(socket_id, receivedPacket.getMessage());
+            cout << receivedPacket.getMessage() << endl;
+            global_settings::disconnect_client(socket_id, global_settings::socket_id_dictionary.get(socket_id));
             break;
         }
     }

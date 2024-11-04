@@ -18,19 +18,21 @@ int main(int argc, char *argv[])
     string serverIP = argv[2];
     int serverPort = stoi(argv[3]);
 
-    Client client;
     Notify notify;
 
     // Inicia a thread corretamente, passando o ponteiro de membro e o objeto notify
     thread watcherThread(&Notify::init, &notify);
 
-    watcherThread.detach();  // Usa detach para rodar de forma independente
+    watcherThread.detach(); // Usa detach para rodar de forma independente
 
-    client.setUsername(username);
-
-    if (client.run(serverIP, serverPort))
+    try
     {
+        Client client = client.run(username, serverIP, serverPort);
         client.sendMessage();
+    }
+    catch (runtime_error &e)
+    {
+        cout << e.what();
     }
 
     return 0;

@@ -7,20 +7,21 @@ using namespace std;
 
 class Client
 {
-    private:
+private:
+    string username;
+    int clientSocket;
+    struct sockaddr_in serverAddress;
+    Client connectToServer(const string &username, const string &serverIP, int serverPort);
+    void createSyncDir();
 
-        string username;
-        int clientSocket;
-        struct sockaddr_in serverAddress;
-        bool connectToServer(const std::string &serverIP, int serverPort);
-        void createSyncDir();
-        
-    public:
-        Client();
-        ~Client();
-        void setUsername(const std::string &user); 
-        void sendMessage();
-        bool run(const string &serverIP, int serverPort);
+public:
+    Client();
+    Client(string username, int clientSocket, sockaddr_in serverAddress);
+    ~Client();
+    void setUsername(const std::string &user);
+    string getUsername();
+    void sendMessage();
+    Client run(const string &username, const string &serverIP, int serverPort);
 };
 
 #endif

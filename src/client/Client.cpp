@@ -23,27 +23,38 @@ Client::Client() : clientSocket(-1)
     }
 }
 
+Client::Client(string username, int clientSocket, sockaddr_in serverAddress) : username(username), clientSocket(clientSocket), serverAddress(serverAddress) {};
+
 Client::~Client()
 {
     close(clientSocket);
 }
 
-bool Client::connectToServer(const string &serverIP, int serverPort)
+Client Client::connectToServer(const string &username, const string &serverIP, int serverPort)
 {
+
+    clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (clientSocket < 0)
+    {
+        cerr << "Erro ao criar o socket." << endl;
+        exit(EXIT_FAILURE);
+    }
+
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(serverPort);
 
     if (inet_pton(AF_INET, serverIP.c_str(), &serverAddress.sin_addr) <= 0)
     {
         cerr << "Endereço IP inválido." << endl;
-        return false;
+        throw std::runtime_error("Endereço IP inválido.");
     }
 
     if (connect(clientSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
     {
         cerr << "Erro ao conectar ao servidor." << endl;
-        return false;
+        throw std::invalid_argument("Erro ao conectar ao servidor.");
     }
+
     char reply;
     // Todo daqui até a linha 70 pode virar um método genérico(de uma outra classe)
     Packet packet(1, MessageType::CONNECTION, Status::SUCCESS, username.c_str());
@@ -56,7 +67,7 @@ bool Client::connectToServer(const string &serverIP, int serverPort)
     if (result <= 0)
     {
         cerr << "Erro ao receber resposta do servidor." << endl;
-        return false;
+        throw std::invalid_argument("Erro ao receber resposta do servidor.");
     }
 
     packet.deserialize(buffer);
@@ -64,23 +75,22 @@ bool Client::connectToServer(const string &serverIP, int serverPort)
     if (packet.isStatusError())
     {
         cerr << "Erro ao conectar ao servidor." << endl;
-        return false;
+        throw std::invalid_argument("Erro ao conectar ao servidor.");
     }
 
     cout << "Conectado ao servidor!" << endl;
 
-    return true;
+    this->username = username;
+    this->clientSocket = clientSocket;
+    this->serverAddress = serverAddress;
+
+    return *this;
 }
 
 void Client::createSyncDir()
 {
     if (!std::filesystem::exists(DIR_NAME))
         std::filesystem::create_directory(DIR_NAME);
-}
-
-void Client::setUsername(const string &user)
-{
-    username = user;
 }
 
 void Client::sendMessage()
@@ -93,13 +103,10 @@ void Client::sendMessage()
 
         if (message == "exit")
         {
-            Packet packet(1, MessageType::DISCONNECTION, Status::SUCCESS, username.c_str());
+            cout << clientSocket << endl;
+            cout << username << endl; // TODO veriricar o porquê de estar vindo lixo.
+            Packet packet(1, MessageType::DISCONNECTION, Status::SUCCESS, "bruno");
             send(clientSocket, packet.serialize(), packet.size(), 0);
-
-            send(clientSocket, packet.serialize(), packet.size(), 0);
-
-            send(clientSocket, message.c_str(), message.size(), 0);
-
             cout << "Encerrando conexão..." << endl;
             break;
         }
@@ -109,12 +116,13 @@ void Client::sendMessage()
     }
 }
 
-bool Client::run(const string &serverIP, int serverPort)
+Client Client::run(const string &username, const string &serverIP, int serverPort)
 {
     createSyncDir();
-    return connectToServer(serverIP, serverPort);
+    return connectToServer(username, serverIP, serverPort);
 }
 
-void createPacket()
+string Client::getUsername()
 {
+    return this->username;
 }

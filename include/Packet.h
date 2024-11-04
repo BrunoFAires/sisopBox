@@ -25,7 +25,7 @@ private:
     MessageType messageType;
     Status status;
     uint16_t messageSize;
-    char message[256];
+    char *message;
 
 public:
     Packet();

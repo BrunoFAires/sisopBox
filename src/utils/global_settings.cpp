@@ -1,6 +1,6 @@
 #include <string>
-#include <format>
 #include <iostream>
+#include <sstream>
 
 #include <global_settings.h>
 
@@ -11,9 +11,9 @@ concurrent_dictionary<int, string> global_settings::socket_id_dictionary;
 
 bool global_settings::connect_client(int socket_id, string client_name)
 {
-    int socket_ids = 1;   
+    int socket_ids = 1;
     bool success = false;
-    string terminal_output;
+    ostringstream terminal_output;
 
     bool client_name_exists = client_name_dictionary.contains(client_name);
 
@@ -25,19 +25,18 @@ bool global_settings::connect_client(int socket_id, string client_name)
         {
             socket_ids++;
 
-            terminal_output = format("Success: connected client; Client: {}; Connection: #{}", client_name, socket_ids);
+            terminal_output << "Success: connected client; Client: " << client_name << " socketId: " << socket_ids;
 
             success = true;
         }
         else
         {
-            terminal_output = format("Failure: client has two connections already; Client: {}; Connection: #{}", client_name, socket_ids);
-        }               
+            terminal_output << "Success: connected client; Client: " << client_name << " socketId: " << socket_ids;
+        }
     }
     else
     {
-        terminal_output = format("Success: connected client; Client: {}; Connection: #{}", client_name, socket_ids);
-
+        terminal_output << "Success: connected client; Client: " << client_name << " socketId: " << socket_ids;
         success = true;
     }
 
@@ -47,15 +46,15 @@ bool global_settings::connect_client(int socket_id, string client_name)
         socket_id_dictionary.insert_or_update(socket_id, client_name);
     }
 
-    cout << terminal_output << endl;
+    cout << terminal_output.str() << endl;
 
-    return success;      
+    return success;
 }
 
 bool global_settings::disconnect_client(int socket_id, string client_name)
 {
     bool success = false;
-    string terminal_output;
+    ostringstream terminal_output;
 
     bool client_name_exists = client_name_dictionary.contains(client_name);
     bool socket_id_exists = socket_id_dictionary.contains(socket_id);
@@ -69,15 +68,14 @@ bool global_settings::disconnect_client(int socket_id, string client_name)
         socket_id_dictionary.remove(socket_id);
 
         success = true;
-
-        terminal_output = format("Success: disconnected client; Client: {}; Socket Id: #{}", client_name, socket_id);
+        terminal_output << "Disconnect: connected client; Client: " << client_name << " socketId: " << socket_ids;
     }
     else
     {
-        terminal_output = format("Failure: unexpected error on disconnecting client; Client: {}; Socket Id: {}", client_name, socket_id);
+        terminal_output << "Disconnect: connected client; Client: " + client_name;
     }
 
-    cout << terminal_output << endl;
+    cout << terminal_output.str() << endl;
 
-    return success; 
+    return success;
 }

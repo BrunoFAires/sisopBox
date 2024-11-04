@@ -3,8 +3,8 @@
 Packet::Packet(uint32_t id, MessageType type, Status status, const char *msg)
     : packetId(id), messageType(type), status(status), messageSize(strlen(msg))
 {
-    strncpy(message, msg, sizeof(message) - 1);
-    message[sizeof(message) - 1] = '\0';
+    message = new char[messageSize];
+    strncpy(message, msg, messageSize);
 }
 
 Packet::Packet()
@@ -61,19 +61,15 @@ void Packet::deserialize(const char *buffer)
     memcpy(&messageSize, buffer + offset, sizeof(messageSize));
     offset += sizeof(messageSize);
 
-    //Todo talvez seja um problema futuramente.
-    if (messageSize >= sizeof(message))
-    {
-        messageSize = sizeof(message) - 1;
-    }
+    delete[] message;
+    message = new char[messageSize + 1];
     memcpy(message, buffer + offset, messageSize);
     message[messageSize] = '\0';
 }
 
 const char *Packet::serialize() const
 {
-    static char buffer[sizeof(packetId) + sizeof(uint8_t) + sizeof(int8_t) +
-                       sizeof(messageSize) + 256];
+    char *buffer = new char[sizeof(packetId) + sizeof(uint8_t) + sizeof(int8_t) + sizeof(messageSize) + messageSize];
     size_t offset = 0;
 
     memcpy(buffer + offset, &packetId, sizeof(packetId));

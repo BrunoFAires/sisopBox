@@ -5,7 +5,6 @@
 #include <arpa/inet.h>
 #include <string>
 #include <filesystem>
-#include <format>
 
 #include <Client.h>
 #include <Packet.h>
@@ -48,7 +47,7 @@ bool Client::connectToServer(const string &serverIP, int serverPort)
     char reply;
     // Todo daqui até a linha 70 pode virar um método genérico(de uma outra classe)
     Packet packet(1, MessageType::CONNECTION, Status::SUCCESS, username.c_str());
-    char buffer[1024]; // TODO deve ser o suficiente por enquanto, mas adequa-lo posteriormente.
+    char buffer[2500]; // TODO deve ser o suficiente por enquanto, mas adequa-lo posteriormente.
 
     send(clientSocket, packet.serialize(), packet.size(), 0);
 

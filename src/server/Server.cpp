@@ -4,13 +4,12 @@
 #include <unistd.h>
 #include <cstring>
 #include <string>
-#include <format>
 
 #include <Server.h>
 #include <Packet.h>
 #include <global_settings.h>
 
-#define PORT 5000
+#define PORT 5001
 
 using namespace std;
 
@@ -51,66 +50,60 @@ Server::~Server()
 
 void Server::start()
 {
-    listen(serverSocket, 5);
+    if (listen(serverSocket, 5) < 0)
+    {
+        cerr << "Erro ao escutar na porta." << endl;
+        exit(EXIT_FAILURE);
+    }
     cout << "Servidor escutando na porta " << ntohs(serverAddress.sin_port) << endl;
 
     while (true)
     {
         int socket_id = accept(serverSocket, nullptr, nullptr);
-
         if (socket_id < 0)
         {
             cerr << "Erro ao aceitar conexão." << endl;
             continue;
         }
-
-        clientThreads.push_back(std::thread(handle_client_activity, socket_id));
+        clientThreads.emplace_back([this, socket_id]()
+                                   { this->handle_client_activity(socket_id); });
     }
 }
 
 void Server::handle_client_activity(int socket_id)
 {
     char buffer[1024];
-
     while (true)
     {
         memset(buffer, 0, sizeof(buffer));
         ssize_t bytesReceived = recv(socket_id, buffer, sizeof(buffer), 0);
         if (bytesReceived <= 0)
         {
-            cout << "Conexão com o cliente encerrada ou erro." << endl;
-
-            string client_name = global_settings::socket_id_dictionary.get(socket_id);
-
-            bool success = global_settings::disconnect_client(socket_id, client_name);
-
+            cerr << "Conexão encerrada ou erro ao receber dados." << endl;
+            global_settings::disconnect_client(socket_id, global_settings::socket_id_dictionary.get(socket_id));
             break;
         }
-        else
+
+        Packet receivedPacket;
+        receivedPacket.deserialize(buffer);
+
+        cout << receivedPacket.getMessage() << endl;
+        cout << receivedPacket.getMessageSize() << endl;
+
+        if (receivedPacket.isConnectionPacket())
         {
-            Packet receivedPacket;
-            receivedPacket.deserialize(buffer);
-            
+            bool success = global_settings::connect_client(socket_id, receivedPacket.getMessage());
+            std::string message = success ? "Conexão bem-sucedida." : "Erro ao conectar.";
+            Packet replyPacket(1, MessageType::CONNECTION, success ? Status::SUCCESS : Status::ERROR, message.c_str());
 
-            if (receivedPacket.isConnectionPacket())
-            {
-                bool success = global_settings::connect_client(socket_id, receivedPacket.getMessage());
-                string message = "Erro ao conectar ao servidor.";
-                Packet replyPacket(1, MessageType::CONNECTION, Status::SUCCESS, message.c_str());
-                if (!success)
-                {
-                    replyPacket.setStatus(Status::ERROR);
-                }
-
-                send(socket_id, replyPacket.serialize(), replyPacket.size(), 0);
-            }
-            else if (receivedPacket.isDisconnectionPacket())
-            {
-                string client_name = receivedPacket.getMessage();
-                bool success = global_settings::disconnect_client(socket_id, client_name);
-            }
+            auto serializedData = replyPacket.serialize();
+            send(socket_id, serializedData, replyPacket.size(), 0);
+        }
+        else if (receivedPacket.isDisconnectionPacket())
+        {
+            global_settings::disconnect_client(socket_id, receivedPacket.getMessage());
+            break;
         }
     }
-
     close(socket_id);
 }

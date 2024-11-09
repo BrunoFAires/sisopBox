@@ -16,6 +16,14 @@ MessageType Packet::getMessageType() const { return messageType; }
 uint16_t Packet::getMessageSize() const { return messageSize; }
 const char *Packet::getMessage() const { return message; }
 
+void Packet::setMessage(const std::string& msg)
+{
+    delete[] message;
+    message = new char[msg.size()];
+    memcpy(message, msg.c_str(), msg.size());
+    messageSize = msg.size();
+}
+
 bool Packet::isStatusError()
 {
     return status == Status::ERROR;

@@ -37,6 +37,7 @@ public:
     const char *getMessage() const;
 
     void setStatus(Status status);
+    void setMessage(const std::string& msg);
 
     const char *serialize() const;
     void deserialize(const char *buffer);

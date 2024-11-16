@@ -1,22 +1,25 @@
 #include "Packet.h"
 
-Packet::Packet(uint32_t id, MessageType type, Status status, const char *msg)
-    : packetId(id), messageType(type), status(status), messageSize(strlen(msg))
+Packet::Packet(uint32_t id, uint32_t totalPackets, MessageType type, Status status, const char *msg)
+    : packetId(id), totalPackets(totalPackets), messageType(type), status(status), messageSize(strlen(msg))
 {
     message = new char[messageSize];
     strncpy(message, msg, messageSize);
 }
 
 Packet::Packet()
+    : packetId(0), totalPackets(0), messageType(MessageType::CONNECTION), status(Status::ERROR), messageSize(0), message(nullptr)
 {
 }
 
+
 uint32_t Packet::getPacketId() const { return packetId; }
+uint32_t Packet::getTotalPackets() const { return totalPackets; }
 MessageType Packet::getMessageType() const { return messageType; }
 uint16_t Packet::getMessageSize() const { return messageSize; }
 const char *Packet::getMessage() const { return message; }
 
-void Packet::setMessage(const std::string& msg)
+void Packet::setMessage(const std::string &msg)
 {
     delete[] message;
     message = new char[msg.size()];
@@ -56,6 +59,9 @@ void Packet::deserialize(const char *buffer)
     memcpy(&packetId, buffer + offset, sizeof(packetId));
     offset += sizeof(packetId);
 
+    memcpy(&totalPackets, buffer + offset, sizeof(totalPackets));
+    offset += sizeof(totalPackets);
+
     uint8_t msgType;
     memcpy(&msgType, buffer + offset, sizeof(msgType));
     messageType = static_cast<MessageType>(msgType);
@@ -69,7 +75,9 @@ void Packet::deserialize(const char *buffer)
     memcpy(&messageSize, buffer + offset, sizeof(messageSize));
     offset += sizeof(messageSize);
 
-    delete[] message;
+    if (message != nullptr) {
+        delete[] message;
+    }
     message = new char[messageSize + 1];
     memcpy(message, buffer + offset, messageSize);
     message[messageSize] = '\0';
@@ -82,6 +90,9 @@ const char *Packet::serialize() const
 
     memcpy(buffer + offset, &packetId, sizeof(packetId));
     offset += sizeof(packetId);
+
+    memcpy(buffer + offset, &totalPackets, sizeof(totalPackets));
+    offset += sizeof(totalPackets);
 
     uint8_t msgType = static_cast<uint8_t>(messageType);
     memcpy(buffer + offset, &msgType, sizeof(msgType));
@@ -101,6 +112,12 @@ const char *Packet::serialize() const
 
 size_t Packet::size() const
 {
-    return sizeof(packetId) + sizeof(uint8_t) + sizeof(int8_t) +
+    return sizeof(packetId) + sizeof(totalPackets) + sizeof(uint8_t) + sizeof(int8_t) +
            sizeof(messageSize) + messageSize;
+}
+
+size_t Packet::headerSize() const
+{
+    return sizeof(packetId) + sizeof(totalPackets) + sizeof(uint8_t) + sizeof(int8_t) +
+           sizeof(messageSize);
 }

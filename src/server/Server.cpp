@@ -6,6 +6,7 @@
 #include <string>
 
 #include <Server.h>
+#include <Service.h>
 #include <Packet.h>
 #include <global_settings.h>
 
@@ -75,32 +76,27 @@ void Server::handle_client_activity(int socket_id)
     char buffer[1024];
     while (true)
     {
-        memset(buffer, 0, sizeof(buffer));
-        ssize_t bytesReceived = recv(socket_id, buffer, sizeof(buffer), 0);
-        if (bytesReceived <= 0)
-        {
-            cerr << "Conexão encerrada ou erro ao receber dados." << endl;
-            global_settings::disconnect_client(socket_id, global_settings::socket_id_dictionary.get(socket_id));
-            break;
-        }
 
-        Packet receivedPacket;
-        receivedPacket.deserialize(buffer);
+        Packet receivedPacket = receivePacket(socket_id);
 
         if (receivedPacket.isConnectionPacket())
         {
             bool success = global_settings::connect_client(socket_id, receivedPacket.getMessage());
             std::string message = success ? "Conexão bem-sucedida." : "Erro ao conectar.";
-            Packet replyPacket(1, MessageType::CONNECTION, success ? Status::SUCCESS : Status::ERROR, message.c_str());
+            Packet replyPacket(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.c_str());
 
-            auto serializedData = replyPacket.serialize();
-            send(socket_id, serializedData, replyPacket.size(), 0);
+            sendPacket(socket_id, replyPacket);
         }
         else if (receivedPacket.isDisconnectionPacket())
         {
             cout << receivedPacket.getMessage() << endl;
             global_settings::disconnect_client(socket_id, global_settings::socket_id_dictionary.get(socket_id));
             break;
+        }
+        else if (receivedPacket.isDataPacket())
+        {
+            cout << receivedPacket.getTotalPackets() << endl;
+            receiveFile(receivedPacket, socket_id);
         }
     }
     close(socket_id);

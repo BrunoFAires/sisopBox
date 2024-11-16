@@ -14,11 +14,7 @@
 
 using namespace std;
 
-class File_Dispatcher
-{
-    public:
-        list<Packet> filePacking(const string fileName);
-        void fileUnpacking(list<Packet>& packets);
-};
+list<Packet> filePacking(const string fileName);
+void fileUnpacking(list<Packet> &packets);
 
 #endif

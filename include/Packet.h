@@ -22,6 +22,7 @@ class Packet
 {
 private:
     uint32_t packetId;
+    uint32_t totalPackets;
     MessageType messageType;
     Status status;
     uint16_t messageSize;
@@ -29,9 +30,10 @@ private:
 
 public:
     Packet();
-    Packet(uint32_t id, MessageType type, Status status, const char *msg);
+    Packet(uint32_t id, uint32_t totalPackets, MessageType type, Status status, const char *msg);
 
     uint32_t getPacketId() const;
+    uint32_t getTotalPackets() const;
     MessageType getMessageType() const;
     uint16_t getMessageSize() const;
     const char *getMessage() const;
@@ -48,6 +50,7 @@ public:
     bool isDisconnectionPacket();
 
     size_t size() const;
+    size_t headerSize() const;
 };
 
 #endif

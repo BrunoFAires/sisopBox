@@ -8,6 +8,7 @@
 
 #include <Client.h>
 #include <Packet.h>
+#include <Service.h>
 
 #define DIR_NAME "sync_dir"
 
@@ -57,26 +58,14 @@ Client Client::connectToServer(const string &username, const string &serverIP, i
 
     char reply;
     // Todo daqui até a linha 70 pode virar um método genérico(de uma outra classe)
-    Packet packet(1, MessageType::CONNECTION, Status::SUCCESS, username.c_str());
-    char buffer[2500]; // TODO deve ser o suficiente por enquanto, mas adequa-lo posteriormente.
+    Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, username.c_str());
+    sendPacket(clientSocket, packet);
+    // Packet receivedPacket = receivePacket2(clientSocket);
 
-    send(clientSocket, packet.serialize(), packet.size(), 0);
-
-    int result = recv(clientSocket, &buffer, sizeof(buffer), 0);
-
-    if (result <= 0)
-    {
-        cerr << "Erro ao receber resposta do servidor." << endl;
-        throw std::invalid_argument("Erro ao receber resposta do servidor.");
-    }
-
-    packet.deserialize(buffer);
-
-    if (packet.isStatusError())
-    {
-        cerr << "Erro ao conectar ao servidor." << endl;
-        throw std::invalid_argument("Erro ao conectar ao servidor.");
-    }
+    // if (receivedPacket.isStatusError())
+    // {
+    //     throw std::invalid_argument("Erro ao conectar ao servidor.");
+    // }
 
     cout << "Conectado ao servidor!" << endl;
 
@@ -96,6 +85,14 @@ void Client::createSyncDir()
 void Client::sendMessage()
 {
     string message;
+    string teste = "Lorem.ipsum.dolor.sit.amet,.consectetur.adipiscing.elit..Integer.ut.molestie.purus..Phasellus.dictum.enim.nec.erat.maximus.tincidunt..Praesent.arcu.metus,.vestibulum.non.tincidunt.et,.placerat.sed.dui..Donec.tincidunt.ligula.non.mauris.laoreet,.et.ultrices.mauris.interdum..Quisque.vestibulum.felis.ligula,.sit.amet.euismod.augue.suscipit.eget..Curabitur.maximus.felis.et.erat.volutpat.efficitur..Nam.eget.augue.vel.est.tincidunt.porttitor.ac.nec.sem..Aenean.eleifend.auctor.mattis..Quisque.placerat.";
+    string teste2 = "AAAAm.ipsum.dolor.sit.amet,.consectetur.adipiscing.elit..Integer.ut.molestie.purus..Phasellus.dictum.enim.nec.erat.maximus.tincidunt..Praesent.arcu.metus,.vestibulum.non.tincidunt.et,.placerat.sed.dui..Donec.tincidunt.ligula.non.mauris.laoreet,.et.ultrices.mauris.interdum..Quisque.vestibulum.felis.ligula,.sit.amet.euismod.augue.suscipit.eget..Curabitur.maximus.felis.et.erat.volutpat.efficitur..Nam.eget.augue.vel.est.tincidunt.porttitor.ac.nec.sem..Aenean.eleifend.auctor.mattis..Quisque.placerat.";
+    cout << "teste";
+    Packet packet3(1, 2, MessageType::DATA, Status::SUCCESS, teste.c_str());
+    sendPacket(clientSocket, packet3);
+    Packet packet4(2, 2, MessageType::DATA, Status::SUCCESS, teste2.c_str());
+    sendPacket(clientSocket, packet4);
+
     while (true)
     {
         cout << "Digite uma mensagem para enviar: ";
@@ -105,7 +102,7 @@ void Client::sendMessage()
         {
             cout << clientSocket << endl;
             cout << username << endl; // TODO veriricar o porquê de estar vindo lixo.
-            Packet packet(1, MessageType::DISCONNECTION, Status::SUCCESS, "bruno");
+            Packet packet(1, 1, MessageType::DISCONNECTION, Status::SUCCESS, "bruno");
             send(clientSocket, packet.serialize(), packet.size(), 0);
             cout << "Encerrando conexão..." << endl;
             break;

@@ -4,7 +4,7 @@ Packet::Packet(uint32_t id, uint32_t totalPackets, MessageType type, Status stat
     : packetId(id), totalPackets(totalPackets), messageType(type), status(status), messageSize(messageSize)
 {
     message = new char[messageSize];
-    strncpy(message, msg, messageSize);
+    std::memcpy(message, msg, messageSize);
 }
 
 Packet::Packet()

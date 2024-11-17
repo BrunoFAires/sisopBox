@@ -94,7 +94,6 @@ void Server::handle_client_activity(int socket_id)
         }
         else if (receivedPacket.isDataPacket())
         {
-            cout << "Total de pacotes:" << receivedPacket.getTotalPackets() << endl;
             receiveFile(receivedPacket, socket_id);
         }
     }

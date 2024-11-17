@@ -48,8 +48,6 @@ list<Packet> filePacking(const string fileName){
         file.read(buffer.data(), bytesToRead);
         std::streamsize readBytes = file.gcount();
 
-        cout << buffer.data();
-
         if(readBytes > 0){
             Packet packet(id, 0, MessageType::DATA, Status::SUCCESS, bytesToRead, buffer.data());
             filePackets.push_back(packet);

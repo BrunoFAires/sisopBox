@@ -94,11 +94,6 @@ void receiveFile(Packet packet, int socket_id)
     }
 
     fileUnpacking(filePackets);
-
-    for (const auto &pkt : filePackets)
-    {
-        cout << pkt.getMessage() << endl;
-    }
 }
 
 void sendFile(int socket_id, string filename)

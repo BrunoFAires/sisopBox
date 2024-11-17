@@ -102,3 +102,14 @@ int Client::getSocketId()
 {
     return this->clientSocket;
 }
+
+void Client::sync()
+{
+    while(true){
+        Packet receivedPacket = receivePacket(clientSocket);
+        if(receivedPacket.isSyncPacket()){
+            cout << "chegou";
+            receiveFile(receivedPacket, clientSocket, username, "sync_dir");
+        }
+    }
+}

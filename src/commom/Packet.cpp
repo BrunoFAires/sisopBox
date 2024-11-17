@@ -46,6 +46,11 @@ bool Packet::isDataPacket()
     return messageType == MessageType::DATA;
 }
 
+bool Packet::isSyncPacket()
+{
+    return messageType == MessageType::SYNC;
+}
+
 void Packet::setStatus(Status status)
 {
     this->status = status;

@@ -9,7 +9,8 @@ enum class MessageType
 {
     CONNECTION = 1,
     DATA = 2,
-    DISCONNECTION = 3
+    DISCONNECTION = 3,
+    SYNC = 4
 };
 
 enum class Status
@@ -48,6 +49,7 @@ public:
     bool isDataPacket();
     bool isConnectionPacket();
     bool isDisconnectionPacket();
+    bool isSyncPacket();
 
     size_t size() const;
     size_t headerSize() const;

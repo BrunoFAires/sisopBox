@@ -14,7 +14,7 @@
 
 using namespace std;
 
-list<Packet> filePacking(std::string fileName);
-void fileUnpacking(list<Packet> &packets, string username);
+list<Packet> filePacking(string dir, string fileName, bool syncFile);
+void fileUnpacking(list<Packet> &packets, string dirName);
 
 #endif

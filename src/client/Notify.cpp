@@ -48,6 +48,18 @@ int Notify::init()
     return fd;
 }
 
+bool isSyncFile(string filename)
+{
+    const std::string suffix = ".sync";
+    // Verifica se o tamanho da string é suficiente para conter o sufixo
+    if (filename.size() < suffix.size())
+    {
+        return false;
+    }
+    // Compara o final da string com o sufixo
+    return filename.compare(filename.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
 void Notify::handleFileChange(inotify_event *event, int wd)
 {
     // TODO tratar o lock dos arquivos que são criados ao editar(.swp). Envia-lo somente quando o lock for liberado.
@@ -60,9 +72,13 @@ void Notify::handleFileChange(inotify_event *event, int wd)
         cout << "removido: " << dir << endl;
     }
 
+    if (isSyncFile(filename))
+        return;
+
     if (event->mask & IN_MOVED_TO)
     {
-        sendFile(client->getSocketId(), filename);
+
+        sendFile(client->getSocketId(), DIR_NAME, filename);
         printf("The file %s was moved from folder with WD %d\n", event->name, event->wd);
     }
 
@@ -76,7 +92,8 @@ void Notify::handleFileChange(inotify_event *event, int wd)
 
     if (event->mask & IN_CLOSE_WRITE)
     {
-        sendFile(client->getSocketId(), filename);
+        sendFile(client->getSocketId(), DIR_NAME, filename);
+
         printf("The file %s was modified with WD %d\n", event->name, event->wd);
     }
 }

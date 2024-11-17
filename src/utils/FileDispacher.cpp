@@ -16,16 +16,18 @@
 
 using namespace std;
 
-list<Packet> filePacking(const string fileName)
+list<Packet> filePacking(string dir, const string fileName, bool syncFile)
 {
 
-    ifstream file(string(DIR_NAME) + "/" + fileName, std::ios::binary);
+    ifstream file(string(dir) + "/" + fileName, std::ios::binary);
 
     if (!file.is_open())
     {
         cerr << "ERROR: couldn't open file." << endl;
         // TODO: algum jeito de interromper a função em caso de erro.
     }
+
+    MessageType type = syncFile ? MessageType::SYNC : MessageType::DATA;
 
     list<Packet> filePackets;
     uint32_t id = 1;
@@ -56,27 +58,26 @@ list<Packet> filePacking(const string fileName)
 
         if (readBytes > 0)
         {
-            Packet packet(id, 0, MessageType::DATA, Status::SUCCESS, bytesToRead, buffer.data());
+            Packet packet(id, 0, type, Status::SUCCESS, bytesToRead, buffer.data());
             filePackets.push_back(packet);
             id++;
         }
     }
 
     file.close();
-
-    Packet fileNamePacket(0, filePackets.size() + 1, MessageType::DATA, Status::SUCCESS, fileName.size(), fileName.c_str());
-    fileNamePacket.setMessage(fileName);
+    string finalFilename = syncFile ? fileName + ".sync" : fileName;
+    Packet fileNamePacket(0, filePackets.size() + 1, type, Status::SUCCESS, finalFilename.size(), finalFilename.c_str());
+    fileNamePacket.setMessage(finalFilename);
     filePackets.push_front(fileNamePacket);
 
     return filePackets;
 }
 
-void fileUnpacking(list<Packet> &packets, string username)
+void fileUnpacking(list<Packet> &packets, string dirName)
 {
 
     string fileName = packets.front().getMessage();
     packets.pop_front();
-    string dirName = "dir/" + username;
     std::string fullPath = dirName + "/" + fileName;
     std::ofstream file(fullPath, std::ios::binary | std::ios::trunc);
 

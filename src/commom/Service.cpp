@@ -1,7 +1,4 @@
 
-#include <string.h>
-#include "FileDispacher.h"
-
 #include <Service.h>
 
 void sendPacket(int socket_id, Packet packet)
@@ -79,12 +76,19 @@ Packet receivePacket(int socket_id)
     return recevedPacket;
 }
 
-void receiveFile(Packet packet, int socket_id, string username)
+void receiveFile(Packet packet, int socket_id, optional<string> username, string dirName)
 {
     Packet recevedPacket;
     char buffer[2500];
     int totalBytesReceived = 0;
     list<Packet> filePackets;
+
+    string dir = dirName;
+
+    if (username)
+    {
+        dir = dir + "/" + *username;
+    }
 
     filePackets.push_front(packet);
     for (int i = 0; i < packet.getTotalPackets() - 1; i++)
@@ -93,15 +97,19 @@ void receiveFile(Packet packet, int socket_id, string username)
         filePackets.push_back(receivedPacket);
     }
 
-    fileUnpacking(filePackets, username);
+    fileUnpacking(filePackets, dir);
 }
 
-void sendFile(int socket_id, string filename)
+void sendFile(int socket_id, string dir, string filename)
 {
-    list<Packet> packets = filePacking(filename);
+    sendFile(socket_id, dir, filename, false);
+}
+
+void sendFile(int socket_id, string dir, string filename, bool syncFile)
+{
+    list<Packet> packets = filePacking(dir, filename, syncFile);
     for (const auto &packet : packets)
     {
-    
         sendPacket(socket_id, packet);
     }
 }

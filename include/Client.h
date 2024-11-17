@@ -23,6 +23,7 @@ public:
     int getSocketId();
     void sendMessage();
     Client run(const string &username, const string &serverIP, int serverPort);
+    void sync();
 };
 
 #endif

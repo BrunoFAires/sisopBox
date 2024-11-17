@@ -22,12 +22,12 @@ int main(int argc, char *argv[])
     {
         Client client = client.run(username, serverIP, serverPort);
         Notify notify(&client);
-        // Inicia a thread corretamente, passando o ponteiro de membro e o objeto notify
-        thread watcherThread(&Notify::init, &notify);
 
-        watcherThread.detach(); // Usa detach para rodar de forma independente
 
-        client.sendMessage();
+        thread watcherThread1(&Notify::init, &notify);
+        thread watcherThread2(&Client::sync, &client);
+        watcherThread1.join();
+        watcherThread2.join();
     }
     catch (runtime_error &e)
     {

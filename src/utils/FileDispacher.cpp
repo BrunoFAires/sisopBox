@@ -16,13 +16,15 @@
 
 using namespace std;
 
-list<Packet> filePacking(const string fileName){
+list<Packet> filePacking(const string fileName)
+{
 
     ifstream file(string(DIR_NAME) + "/" + fileName, std::ios::binary);
 
-    if(!file.is_open()){
+    if (!file.is_open())
+    {
         cerr << "ERROR: couldn't open file." << endl;
-        //TODO: algum jeito de interromper a função em caso de erro.
+        // TODO: algum jeito de interromper a função em caso de erro.
     }
 
     list<Packet> filePackets;
@@ -31,15 +33,19 @@ list<Packet> filePacking(const string fileName){
     std::streampos remaining_bytes = 0;
 
     remaining_bytes = file.tellg();
-    file.seekg(0, std::ios::end );
+    file.seekg(0, std::ios::end);
     remaining_bytes = file.tellg() - remaining_bytes;
     file.seekg(0, std::ios::beg);
 
-    while(remaining_bytes > 0){
-        if(remaining_bytes >= MAX_PACKET_SIZE){
+    while (remaining_bytes > 0)
+    {
+        if (remaining_bytes >= MAX_PACKET_SIZE)
+        {
             bytesToRead = MAX_PACKET_SIZE;
             remaining_bytes -= MAX_PACKET_SIZE;
-        } else {
+        }
+        else
+        {
             bytesToRead = remaining_bytes;
             remaining_bytes = 0;
         }
@@ -48,7 +54,8 @@ list<Packet> filePacking(const string fileName){
         file.read(buffer.data(), bytesToRead);
         std::streamsize readBytes = file.gcount();
 
-        if(readBytes > 0){
+        if (readBytes > 0)
+        {
             Packet packet(id, 0, MessageType::DATA, Status::SUCCESS, bytesToRead, buffer.data());
             filePackets.push_back(packet);
             id++;
@@ -64,13 +71,14 @@ list<Packet> filePacking(const string fileName){
     return filePackets;
 }
 
-void fileUnpacking(list<Packet> &packets)
+void fileUnpacking(list<Packet> &packets, string username)
 {
 
     string fileName = packets.front().getMessage();
     packets.pop_front();
-
-    std::ofstream file("teste/" + fileName, std::ios::binary | std::ios::trunc);
+    string dirName = "dir/" + username;
+    std::string fullPath = dirName + "/" + fileName;
+    std::ofstream file(fullPath, std::ios::binary | std::ios::trunc);
 
     if (!file)
     {
@@ -82,7 +90,6 @@ void fileUnpacking(list<Packet> &packets)
     {
         const char *message = packet.getMessage();
         uint16_t messageSize = packet.getMessageSize();
-        cout << message;
 
         file.write(message, messageSize);
     }

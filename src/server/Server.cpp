@@ -10,12 +10,20 @@
 #include <Packet.h>
 #include <global_settings.h>
 
+#define DIR_NAME "dir"
 #define PORT 5000
 
 using namespace std;
 
+void createDir(const char *dirName)
+{
+    if (!std::filesystem::exists(dirName))
+        std::filesystem::create_directory(dirName);
+}
+
 Server::Server()
 {
+    createDir(DIR_NAME);
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
     if (serverSocket < 0)
@@ -80,21 +88,23 @@ void Server::handle_client_activity(int socket_id)
 
         if (receivedPacket.isConnectionPacket())
         {
-            bool success = global_settings::connect_client(socket_id, receivedPacket.getMessage());
+            string username = receivedPacket.getMessage();
+            bool success = global_settings::connect_client(socket_id, username);
             std::string message = success ? "Conexão bem-sucedida." : "Erro ao conectar.";
             Packet replyPacket(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.size(), message.c_str());
-
+            string userDirFolderName = string(DIR_NAME) + "/" + username;
+            createDir(userDirFolderName.c_str());
             sendPacket(socket_id, replyPacket);
         }
         else if (receivedPacket.isDisconnectionPacket())
         {
-            cout << receivedPacket.getMessage() << endl;
             global_settings::disconnect_client(socket_id, global_settings::socket_id_dictionary.get(socket_id));
             break;
         }
         else if (receivedPacket.isDataPacket())
         {
-            receiveFile(receivedPacket, socket_id);
+            string username = global_settings::socket_id_dictionary.get(socket_id);
+            receiveFile(receivedPacket, socket_id, username);
         }
     }
     close(socket_id);

@@ -55,17 +55,23 @@ void Notify::handleFileChange(inotify_event *event, int wd)
     string filename(event->name); // Convert to std::st
     if (event->mask & IN_DELETE)
     {
-        printf("The file %s was deleted with WD %d\n", event->name, event->wd);
+        string dir = "dir/" + client->getUsername() + "/" + filename;
+        remove(dir.c_str());
+        cout << "removido: " << dir << endl;
     }
 
     if (event->mask & IN_MOVED_TO)
     {
-        printf("The file %s was removed from folder with WD %d\n", event->name, event->wd);
+        sendFile(client->getSocketId(), filename);
+        printf("The file %s was moved from folder with WD %d\n", event->name, event->wd);
     }
 
     if (event->mask & IN_MOVED_FROM)
     {
-        printf("The file %s was moved to folder with WD %d\n", event->name, event->wd);
+        string dir = "dir/" + client->getUsername() + "/" + filename;
+        remove(dir.c_str());
+        cout << "removido: " << dir << endl;
+        printf("The file %s was removed to folder with WD %d\n", event->name, event->wd);
     }
 
     if (event->mask & IN_CLOSE_WRITE)

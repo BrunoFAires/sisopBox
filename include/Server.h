@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <thread>
+#include <filesystem>
 
 using namespace std;
 
@@ -21,4 +22,5 @@ class Server
         Server();
         ~Server();
         void start();
+        void createSyncDir();
 };

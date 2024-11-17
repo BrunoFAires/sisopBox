@@ -79,7 +79,7 @@ Packet receivePacket(int socket_id)
     return recevedPacket;
 }
 
-void receiveFile(Packet packet, int socket_id)
+void receiveFile(Packet packet, int socket_id, string username)
 {
     Packet recevedPacket;
     char buffer[2500];
@@ -93,7 +93,7 @@ void receiveFile(Packet packet, int socket_id)
         filePackets.push_back(receivedPacket);
     }
 
-    fileUnpacking(filePackets);
+    fileUnpacking(filePackets, username);
 }
 
 void sendFile(int socket_id, string filename)

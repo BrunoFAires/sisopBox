@@ -1,5 +1,5 @@
-#ifndef FILE_DISPATCHER_H
-#define FILE_DISPATCHER_H
+#ifndef FILEDISPATCHER_H
+#define FILEDISPATCHER_H
 
 #include <iostream>
 #include <fstream>
@@ -14,7 +14,7 @@
 
 using namespace std;
 
-list<Packet> filePacking(const string fileName);
+list<Packet> filePacking(std::string fileName);
 void fileUnpacking(list<Packet> &packets);
 
 #endif

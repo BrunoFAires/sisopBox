@@ -73,7 +73,6 @@ void Server::start()
 
 void Server::handle_client_activity(int socket_id)
 {
-    char buffer[1024];
     while (true)
     {
 
@@ -95,7 +94,7 @@ void Server::handle_client_activity(int socket_id)
         }
         else if (receivedPacket.isDataPacket())
         {
-            cout << receivedPacket.getTotalPackets() << endl;
+            cout << "Total de pacotes:" << receivedPacket.getTotalPackets() << endl;
             receiveFile(receivedPacket, socket_id);
         }
     }

@@ -4,17 +4,19 @@ SDIR = src
 CDIR = client
 SERVERDIR = server
 UTILDIR = utils
+COMMOM = commom
 
 # Compiler and flags
 CC = g++
 CFLAGS = -I. -I$(IDIR) -std=c++20  # Use C++20 standard
 
 # Dependencies
-DEPS = $(IDIR)/Client.h $(IDIR)/Server.h $(IDIR)/Notify.h $(IDIR)/global_settings.h $(IDIR)/concurrent_dictionary.h $(IDIR)/Packet.h $(IDIR)/Packet.h
+DEPS = $(IDIR)/Client.h $(IDIR)/Server.h $(IDIR)/Notify.h $(IDIR)/global_settings.h $(IDIR)/concurrent_dictionary.h $(IDIR)/Packet.h $(IDIR)/Packet.h  $(IDIR)/FileDispacher.h
+
 
 # Object files for server and client
-OBJSERVER = $(SDIR)/$(SERVERDIR)/main.o $(SDIR)/$(SERVERDIR)/Server.o $(SDIR)/$(UTILDIR)/global_settings.o $(SDIR)/Packet.o $(SDIR)/commom/Service.o
-OBJCLIENT = $(SDIR)/$(CDIR)/main.o $(SDIR)/$(CDIR)/Client.o $(SDIR)/$(CDIR)/Notify.o $(SDIR)/$(UTILDIR)/global_settings.o $(SDIR)/Packet.o $(SDIR)/commom/Service.o
+OBJSERVER = $(SDIR)/$(SERVERDIR)/main.o $(SDIR)/$(SERVERDIR)/Server.o $(SDIR)/$(UTILDIR)/global_settings.o $(SDIR)/$(COMMOM)/Packet.o $(SDIR)/commom/Service.o $(SDIR)/$(UTILDIR)/FileDispacher.o
+OBJCLIENT = $(SDIR)/$(CDIR)/main.o $(SDIR)/$(CDIR)/Client.o $(SDIR)/$(CDIR)/Notify.o $(SDIR)/$(UTILDIR)/global_settings.o $(SDIR)/$(COMMOM)/Packet.o $(SDIR)/commom/Service.o $(SDIR)/$(UTILDIR)/FileDispacher.o
 
 # Pattern rules
 %.o: %.cpp $(DEPS)
@@ -30,6 +32,7 @@ server: $(OBJSERVER)
 # Build client
 client: $(OBJCLIENT)
 	$(CC) -o $@ $^ $(CFLAGS)
+
 
 # Clean up build files
 clean:

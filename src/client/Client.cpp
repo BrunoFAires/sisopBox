@@ -56,16 +56,14 @@ Client Client::connectToServer(const string &username, const string &serverIP, i
         throw std::invalid_argument("Erro ao conectar ao servidor.");
     }
 
-    char reply;
-    // Todo daqui até a linha 70 pode virar um método genérico(de uma outra classe)
     Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, username.c_str());
     sendPacket(clientSocket, packet);
-    // Packet receivedPacket = receivePacket2(clientSocket);
+    packet = receivePacket(clientSocket);
 
-    // if (receivedPacket.isStatusError())
-    // {
-    //     throw std::invalid_argument("Erro ao conectar ao servidor.");
-    // }
+    if (packet.isStatusError())
+    {
+        throw std::invalid_argument("Erro ao conectar ao servidor.");
+    }
 
     cout << "Conectado ao servidor!" << endl;
 
@@ -84,32 +82,8 @@ void Client::createSyncDir()
 
 void Client::sendMessage()
 {
-    string message;
-    string teste = "Lorem.ipsum.dolor.sit.amet,.consectetur.adipiscing.elit..Integer.ut.molestie.purus..Phasellus.dictum.enim.nec.erat.maximus.tincidunt..Praesent.arcu.metus,.vestibulum.non.tincidunt.et,.placerat.sed.dui..Donec.tincidunt.ligula.non.mauris.laoreet,.et.ultrices.mauris.interdum..Quisque.vestibulum.felis.ligula,.sit.amet.euismod.augue.suscipit.eget..Curabitur.maximus.felis.et.erat.volutpat.efficitur..Nam.eget.augue.vel.est.tincidunt.porttitor.ac.nec.sem..Aenean.eleifend.auctor.mattis..Quisque.placerat.";
-    string teste2 = "AAAAm.ipsum.dolor.sit.amet,.consectetur.adipiscing.elit..Integer.ut.molestie.purus..Phasellus.dictum.enim.nec.erat.maximus.tincidunt..Praesent.arcu.metus,.vestibulum.non.tincidunt.et,.placerat.sed.dui..Donec.tincidunt.ligula.non.mauris.laoreet,.et.ultrices.mauris.interdum..Quisque.vestibulum.felis.ligula,.sit.amet.euismod.augue.suscipit.eget..Curabitur.maximus.felis.et.erat.volutpat.efficitur..Nam.eget.augue.vel.est.tincidunt.porttitor.ac.nec.sem..Aenean.eleifend.auctor.mattis..Quisque.placerat.";
-    cout << "teste";
-    Packet packet3(1, 2, MessageType::DATA, Status::SUCCESS, teste.c_str());
-    sendPacket(clientSocket, packet3);
-    Packet packet4(2, 2, MessageType::DATA, Status::SUCCESS, teste2.c_str());
-    sendPacket(clientSocket, packet4);
-
     while (true)
     {
-        cout << "Digite uma mensagem para enviar: ";
-        getline(cin >> ws, message);
-
-        if (message == "exit")
-        {
-            cout << clientSocket << endl;
-            cout << username << endl; // TODO veriricar o porquê de estar vindo lixo.
-            Packet packet(1, 1, MessageType::DISCONNECTION, Status::SUCCESS, "bruno");
-            send(clientSocket, packet.serialize(), packet.size(), 0);
-            cout << "Encerrando conexão..." << endl;
-            break;
-        }
-
-        string fullMessage = username + ": " + message;
-        send(clientSocket, fullMessage.c_str(), fullMessage.size(), 0);
     }
 }
 
@@ -122,4 +96,9 @@ Client Client::run(const string &username, const string &serverIP, int serverPor
 string Client::getUsername()
 {
     return this->username;
+}
+
+int Client::getSocketId()
+{
+    return this->clientSocket;
 }

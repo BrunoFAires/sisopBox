@@ -18,16 +18,15 @@ int main(int argc, char *argv[])
     string serverIP = argv[2];
     int serverPort = stoi(argv[3]);
 
-    Notify notify;
-
-    // Inicia a thread corretamente, passando o ponteiro de membro e o objeto notify
-    thread watcherThread(&Notify::init, &notify);
-
-    watcherThread.detach(); // Usa detach para rodar de forma independente
-
     try
     {
         Client client = client.run(username, serverIP, serverPort);
+        Notify notify(&client);
+        // Inicia a thread corretamente, passando o ponteiro de membro e o objeto notify
+        thread watcherThread(&Notify::init, &notify);
+
+        watcherThread.detach(); // Usa detach para rodar de forma independente
+
         client.sendMessage();
     }
     catch (runtime_error &e)

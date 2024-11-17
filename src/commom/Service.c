@@ -1,3 +1,7 @@
+
+#include <string.h>
+#include "FileDispacher.h"
+
 #include <Service.h>
 
 void sendPacket(int socket_id, Packet packet)
@@ -47,7 +51,7 @@ Packet receivePacket(int socket_id)
 
     totalBytesReceived = 0;
     recevedPacket.deserialize(buffer);
-    cout << recevedPacket.getMessageSize();
+    cout << "total pacote recebido: " << recevedPacket.getMessageSize() << endl;
 
     while (totalBytesReceived < recevedPacket.getMessageSize())
     {
@@ -73,6 +77,8 @@ Packet receivePacket(int socket_id)
         throw std::invalid_argument("Ocorreu um erro ao processar o pacote recebido.");
     }
 
+    cout << "total Bytes: " << totalBytesReceived << endl;
+
     return recevedPacket;
 }
 
@@ -84,16 +90,27 @@ void receiveFile(Packet packet, int socket_id)
     list<Packet> filePackets;
 
     filePackets.push_front(packet);
-    cout << packet.getTotalPackets();
     for (int i = 0; i < packet.getTotalPackets() - 1; i++)
     {
         Packet receivedPacket = receivePacket(socket_id);
         filePackets.push_back(receivedPacket);
     }
 
-    for (const auto &pkt : filePackets)
+    fileUnpacking(filePackets);
+
+    /* for (const auto &pkt : filePackets)
     {
-        cout << "a" << endl;
         cout << pkt.getMessage() << endl;
+    } */
+}
+
+void sendFile(int socket_id, string filename)
+{
+    list<Packet> packets = filePacking(filename);
+    for (const auto &packet : packets)
+    {
+        cout << "tamanho pacote cliente: " << packet.size() << endl;
+
+        sendPacket(socket_id, packet);
     }
 }

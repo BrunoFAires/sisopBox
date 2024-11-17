@@ -5,8 +5,11 @@
 #include <string>
 #include <list>
 #include <Packet.h>
+#include <vector>
+#include <cmath>
+#include <iostream>
 
-#include "File_Dispatcher.h"
+#include "FileDispacher.h"
 
 #define DIR_NAME "sync_dir"
 #define MAX_PACKET_SIZE 1024
@@ -15,54 +18,46 @@ using namespace std;
 
 list<Packet> filePacking(const string fileName)
 {
-
-    ifstream file(string(DIR_NAME) + "/" + fileName, std::ios::binary);
+    std::ifstream file(std::string(DIR_NAME) + "/" + fileName, std::ios::binary);
 
     if (!file.is_open())
     {
-        cerr << "ERROR: couldn't open file." << endl;
-        // TODO: algum jeito de interromper a função em caso de erro.
+        std::cerr << "ERROR: Couldn't open file." << std::endl;
+        return {}; // Retorna lista vazia em caso de erro
     }
 
-    list<Packet> filePackets;
-    uint32_t id = 1;
-    size_t bytesToRead = 0;
-    std::streampos remaining_bytes = 0;
-
-    remaining_bytes = file.tellg();
+    // Determinar tamanho do arquivo
     file.seekg(0, std::ios::end);
-    remaining_bytes = file.tellg() - remaining_bytes;
+    std::streampos fileSize = file.tellg();
     file.seekg(0, std::ios::beg);
 
-    while (remaining_bytes > 0)
+    std::list<Packet> filePackets;
+    uint32_t packetId = 1;
+    uint32_t totalPackets = std::ceil(static_cast<double>(fileSize) / MAX_PACKET_SIZE) + 1;
+
+    cout << "bata:" << totalPackets;
+
+    while (fileSize > 0)
     {
-        if (remaining_bytes >= MAX_PACKET_SIZE)
-        {
-            bytesToRead = MAX_PACKET_SIZE;
-            remaining_bytes -= MAX_PACKET_SIZE;
-        }
-        else
-        {
-            bytesToRead = remaining_bytes;
-            remaining_bytes = 0;
-        }
-        vector<char> buffer(bytesToRead);
+        size_t bytesToRead = std::min(static_cast<std::streampos>(MAX_PACKET_SIZE), fileSize);
+        std::vector<char> buffer(bytesToRead);
 
         file.read(buffer.data(), bytesToRead);
         std::streamsize readBytes = file.gcount();
 
         if (readBytes > 0)
         {
-            Packet packet(id, MessageType::DATA, Status::SUCCESS, buffer.data());
+            Packet packet(packetId, totalPackets, MessageType::DATA, Status::SUCCESS, buffer.data());
             filePackets.push_back(packet);
-            id++;
+            packetId++;
+            fileSize -= readBytes;
         }
     }
 
     file.close();
 
-    Packet fileNamePacket(0, MessageType::DATA, Status::SUCCESS, fileName.data());
-    fileNamePacket.setMessage(fileName);
+    // Criar pacote com o nome do arquivo
+    Packet fileNamePacket(0, filePackets.size() + 1, MessageType::DATA, Status::SUCCESS, fileName.c_str());
     filePackets.push_front(fileNamePacket);
 
     return filePackets;
@@ -74,7 +69,7 @@ void fileUnpacking(list<Packet> &packets)
     string fileName = packets.front().getMessage();
     packets.pop_front();
 
-    std::ofstream file(string(DIR_NAME) + "/" + fileName, std::ios::binary | std::ios::trunc);
+    std::ofstream file("teste/" + fileName, std::ios::binary | std::ios::trunc);
 
     if (!file)
     {

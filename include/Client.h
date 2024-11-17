@@ -20,6 +20,7 @@ public:
     ~Client();
     void setUsername(const std::string &user);
     string getUsername();
+    int getSocketId();
     void sendMessage();
     Client run(const string &username, const string &serverIP, int serverPort);
 };

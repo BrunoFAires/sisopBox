@@ -12,7 +12,6 @@ Packet::Packet()
 {
 }
 
-
 uint32_t Packet::getPacketId() const { return packetId; }
 uint32_t Packet::getTotalPackets() const { return totalPackets; }
 MessageType Packet::getMessageType() const { return messageType; }
@@ -75,7 +74,8 @@ void Packet::deserialize(const char *buffer)
     memcpy(&messageSize, buffer + offset, sizeof(messageSize));
     offset += sizeof(messageSize);
 
-    if (message != nullptr) {
+    if (message != nullptr)
+    {
         delete[] message;
     }
     message = new char[messageSize + 1];
@@ -85,7 +85,7 @@ void Packet::deserialize(const char *buffer)
 
 const char *Packet::serialize() const
 {
-    char *buffer = new char[sizeof(packetId) + sizeof(uint8_t) + sizeof(int8_t) + sizeof(messageSize) + messageSize];
+    char *buffer = new char[sizeof(packetId) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(int8_t) + sizeof(messageSize) + messageSize];
     size_t offset = 0;
 
     memcpy(buffer + offset, &packetId, sizeof(packetId));

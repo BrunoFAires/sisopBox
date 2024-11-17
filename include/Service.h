@@ -10,7 +10,7 @@ using namespace std;
 
 void sendPacket(int socketdId, Packet packet);
 Packet receivePacket(int socket_id);
-Packet receivePacket2(int socket_id);
 void receiveFile(Packet packet, int socket_id);
+void sendFile(int socket_id, string filename);
 
 #endif

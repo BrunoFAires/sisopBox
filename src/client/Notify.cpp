@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "Notify.h"
+#include "Service.h"
 
 #define MAX_EVENTS 1024
 #define LEN_NAME 255
@@ -13,7 +14,7 @@
 #define BUF_LEN (MAX_EVENTS * (EVENT_SIZE + LEN_NAME))
 #define DIR_NAME "sync_dir"
 
-Notify::Notify()
+Notify::Notify(Client *client) : client(client)
 {
 }
 
@@ -51,11 +52,12 @@ void Notify::handleFileChange(inotify_event *event, int wd)
 {
     // TODO tratar o lock dos arquivos que são criados ao editar(.swp). Envia-lo somente quando o lock for liberado.
     // Devemos impossbilitar a edição de um arquivo por clientes diferentes?
+    string filename(event->name); // Convert to std::st
     if (event->mask & IN_DELETE)
     {
         printf("The file %s was deleted with WD %d\n", event->name, event->wd);
     }
-    
+
     if (event->mask & IN_MOVED_TO)
     {
         printf("The file %s was removed from folder with WD %d\n", event->name, event->wd);
@@ -68,6 +70,7 @@ void Notify::handleFileChange(inotify_event *event, int wd)
 
     if (event->mask & IN_CLOSE_WRITE)
     {
+        sendFile(client->getSocketId(), filename);
         printf("The file %s was modified with WD %d\n", event->name, event->wd);
     }
 }

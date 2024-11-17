@@ -56,7 +56,7 @@ Client Client::connectToServer(const string &username, const string &serverIP, i
         throw std::invalid_argument("Erro ao conectar ao servidor.");
     }
 
-    Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, username.c_str());
+    Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, username.size(), username.c_str());
     sendPacket(clientSocket, packet);
     packet = receivePacket(clientSocket);
 

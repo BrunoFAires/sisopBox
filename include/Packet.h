@@ -30,7 +30,7 @@ private:
 
 public:
     Packet();
-    Packet(uint32_t id, uint32_t totalPackets, MessageType type, Status status, const char *msg);
+    Packet(uint32_t id, uint32_t totalPackets, MessageType type, Status status, uint16_t messageSize, const char *msg);
 
     uint32_t getPacketId() const;
     uint32_t getTotalPackets() const;

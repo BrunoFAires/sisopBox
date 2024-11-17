@@ -1,7 +1,7 @@
 #include "Packet.h"
 
-Packet::Packet(uint32_t id, uint32_t totalPackets, MessageType type, Status status, const char *msg)
-    : packetId(id), totalPackets(totalPackets), messageType(type), status(status), messageSize(strlen(msg))
+Packet::Packet(uint32_t id, uint32_t totalPackets, MessageType type, Status status, uint16_t messageSize, const char *msg)
+    : packetId(id), totalPackets(totalPackets), messageType(type), status(status), messageSize(messageSize)
 {
     message = new char[messageSize];
     strncpy(message, msg, messageSize);

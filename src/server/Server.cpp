@@ -82,7 +82,7 @@ void Server::handle_client_activity(int socket_id)
         {
             bool success = global_settings::connect_client(socket_id, receivedPacket.getMessage());
             std::string message = success ? "Conexão bem-sucedida." : "Erro ao conectar.";
-            Packet replyPacket(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.c_str());
+            Packet replyPacket(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.size(), message.c_str());
 
             sendPacket(socket_id, replyPacket);
         }

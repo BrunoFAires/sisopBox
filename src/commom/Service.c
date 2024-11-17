@@ -51,7 +51,6 @@ Packet receivePacket(int socket_id)
 
     totalBytesReceived = 0;
     recevedPacket.deserialize(buffer);
-    cout << "total pacote recebido: " << recevedPacket.getMessageSize() << endl;
 
     while (totalBytesReceived < recevedPacket.getMessageSize())
     {
@@ -77,8 +76,6 @@ Packet receivePacket(int socket_id)
         throw std::invalid_argument("Ocorreu um erro ao processar o pacote recebido.");
     }
 
-    cout << "total Bytes: " << totalBytesReceived << endl;
-
     return recevedPacket;
 }
 
@@ -98,10 +95,10 @@ void receiveFile(Packet packet, int socket_id)
 
     fileUnpacking(filePackets);
 
-    /* for (const auto &pkt : filePackets)
+    for (const auto &pkt : filePackets)
     {
         cout << pkt.getMessage() << endl;
-    } */
+    }
 }
 
 void sendFile(int socket_id, string filename)
@@ -109,8 +106,7 @@ void sendFile(int socket_id, string filename)
     list<Packet> packets = filePacking(filename);
     for (const auto &packet : packets)
     {
-        cout << "tamanho pacote cliente: " << packet.size() << endl;
-
+    
         sendPacket(socket_id, packet);
     }
 }

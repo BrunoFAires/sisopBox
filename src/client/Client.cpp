@@ -114,7 +114,7 @@ void Client::sync()
         }
         if (receivedPacket.isDeletePacket())
         {
-            string path = "sync_dir" + string(receivedPacket.getMessage());
+            string path = "sync_dir/" + string(receivedPacket.getMessage());
             deleteFile(path);
         }
     }

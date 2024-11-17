@@ -106,7 +106,7 @@ void Server::handle_client_activity(int socket_id)
             string username = global_settings::socket_id_dictionary.get(socket_id);
             receiveFile(receivedPacket, socket_id, username, "dir");
             auto syncDeviceSocket = global_settings::socket_id_dictionary.findFirstDifferentValue(username, socket_id);
-    
+
             if (syncDeviceSocket)
             {
                 string filename = receivedPacket.getMessage();
@@ -114,7 +114,7 @@ void Server::handle_client_activity(int socket_id)
                 sendFile(*syncDeviceSocket, dirName, filename, true);
             }
         }
-         else if (receivedPacket.isDataPacket())
+        else if (receivedPacket.isDeletePacket())
         {
             string username = global_settings::socket_id_dictionary.get(socket_id);
             auto syncDeviceSocket = global_settings::socket_id_dictionary.findFirstDifferentValue(username, socket_id);

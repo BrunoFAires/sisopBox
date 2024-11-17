@@ -114,6 +114,8 @@ void sendFile(int socket_id, string dir, string filename, bool syncFile)
     }
 }
 
-void deleteFile(string filePath){
+void deleteFile(string filePath)
+{
+    cout << filePath << endl;
     remove(filePath.c_str());
 }

@@ -115,6 +115,29 @@ void Server::handle_client_activity(int socket_id)
                 sendFile(socket_id, dirName, filename, true);
             }
         }
+        else if (receivedPacket.isCommandPacket())
+        {
+            string command = receivedPacket.getMessage();
+
+            size_t spacePos = command.find(' ');
+
+            if (spacePos != string::npos)
+            {
+                string file = command.substr(spacePos + 1);
+
+                command = command.substr(0, spacePos);
+
+                if (command == "download")
+                {
+                    cout << command + file << endl;
+                }
+            }
+            else if (command == "exit")
+            {
+                global_settings::disconnect_client(socket_id, global_settings::socket_id_dictionary.get(socket_id));
+                break;
+            }
+        }
     }
     close(socket_id);
 }

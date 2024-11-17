@@ -7,6 +7,7 @@
 
 enum class MessageType
 {
+    COMMAND = 0,
     CONNECTION = 1,
     DATA = 2,
     DISCONNECTION = 3,
@@ -50,6 +51,7 @@ public:
     bool isConnectionPacket();
     bool isDisconnectionPacket();
     bool isSyncPacket();
+    bool isCommandPacket();
 
     size_t size() const;
     size_t headerSize() const;

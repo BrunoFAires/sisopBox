@@ -24,6 +24,7 @@ public:
     void sendMessage();
     Client run(const string &username, const string &serverIP, int serverPort);
     void sync();
+    void handle_client_command();
 };
 
 #endif

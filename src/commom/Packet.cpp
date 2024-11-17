@@ -51,6 +51,11 @@ bool Packet::isSyncPacket()
     return messageType == MessageType::SYNC;
 }
 
+bool Packet::isCommandPacket()
+{
+    return messageType == MessageType::COMMAND;
+}
+
 void Packet::setStatus(Status status)
 {
     this->status = status;

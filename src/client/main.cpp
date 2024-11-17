@@ -22,12 +22,12 @@ int main(int argc, char *argv[])
     {
         Client client = client.run(username, serverIP, serverPort);
         Notify notify(&client);
-
-
         thread watcherThread1(&Notify::init, &notify);
         thread watcherThread2(&Client::sync, &client);
+        thread watcherThread3(&Client::handle_client_command, &client);
         watcherThread1.join();
         watcherThread2.join();
+        watcherThread3.join();
     }
     catch (runtime_error &e)
     {

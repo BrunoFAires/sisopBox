@@ -113,3 +113,18 @@ void Client::sync()
         }
     }
 }
+
+void Client::handle_client_command()
+{
+    while (true)
+    {
+        string command;
+
+        if (getline(cin, command))
+        {
+            Packet packet(0, 1, MessageType::COMMAND, Status::SUCCESS, command.size(), command.c_str());
+            
+            sendPacket(clientSocket, packet);
+        }
+    }
+}

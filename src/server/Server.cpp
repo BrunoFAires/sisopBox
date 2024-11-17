@@ -129,7 +129,17 @@ void Server::handle_client_activity(int socket_id)
 
                 if (command == "download")
                 {
-                    cout << command + file << endl;
+                    string username = global_settings::socket_id_dictionary.get(socket_id);
+                    receiveFile(receivedPacket, socket_id, username, "dir");
+                    auto syncDeviceSocket = global_settings::socket_id_dictionary.findFirstDifferentValue(username, socket_id);
+
+                    if (syncDeviceSocket)
+                    {
+                        // string filename = string(receivedPacket.getMessage()) + ".sync";
+                        string filename = receivedPacket.getMessage();
+                        string dirName = "dir/" + username;
+                        sendFile(socket_id, dirName, filename, true);
+                    }
                 }
             }
             else if (command == "exit")

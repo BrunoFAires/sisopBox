@@ -51,6 +51,11 @@ bool Packet::isSyncPacket()
     return messageType == MessageType::SYNC;
 }
 
+bool Packet::isDeletePacket()
+{
+    return messageType == MessageType::DELETE;
+}
+
 void Packet::setStatus(Status status)
 {
     this->status = status;

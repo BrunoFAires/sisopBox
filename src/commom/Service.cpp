@@ -113,3 +113,7 @@ void sendFile(int socket_id, string dir, string filename, bool syncFile)
         sendPacket(socket_id, packet);
     }
 }
+
+void deleteFile(string filePath){
+    remove(filePath.c_str());
+}

@@ -7,12 +7,17 @@
 #include <string.h>
 #include "Notify.h"
 #include "Service.h"
+#include <unordered_set>
+#include <mutex>
 
 #define MAX_EVENTS 1024
 #define LEN_NAME 255
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define BUF_LEN (MAX_EVENTS * (EVENT_SIZE + LEN_NAME))
 #define DIR_NAME "sync_dir"
+
+std::unordered_set<std::string> renamedFiles;
+std::mutex renamedFilesMutex;
 
 Notify::Notify(Client *client) : client(client)
 {
@@ -59,42 +64,46 @@ bool isSyncFile(string filename)
     // Compara o final da string com o sufixo
     return filename.compare(filename.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
-
 void Notify::handleFileChange(inotify_event *event, int wd)
 {
-    // TODO tratar o lock dos arquivos que são criados ao editar(.swp). Envia-lo somente quando o lock for liberado.
-    // Devemos impossbilitar a edição de um arquivo por clientes diferentes?
-    string filename(event->name); // Convert to std::st
-    if (event->mask & IN_DELETE)
+    string filename(event->name);
+
     {
-        string dir = "dir/" + client->getUsername() + "/" + filename;
-        remove(dir.c_str());
-        cout << "removido: " << dir << endl;
+        std::lock_guard<std::mutex> lock(renamedFilesMutex);
+
+        if (renamedFiles.find(filename) != renamedFiles.end())
+        {
+            renamedFiles.erase(filename);
+            return;
+        }
     }
 
     if (isSyncFile(filename))
+    {
+        string originalPath = string(DIR_NAME) + "/" + filename;
+        string newFilename = filename.substr(0, filename.size() - 5);
+        string newPath = string(DIR_NAME) + "/" + newFilename;
+
+        if (rename(originalPath.c_str(), newPath.c_str()) == 0)
+        {
+            {
+                std::lock_guard<std::mutex> lock(renamedFilesMutex);
+                renamedFiles.insert(newFilename);
+            }
+        }
+
         return;
-
-    if (event->mask & IN_MOVED_TO)
-    {
-
-        sendFile(client->getSocketId(), DIR_NAME, filename);
-        printf("The file %s was moved from folder with WD %d\n", event->name, event->wd);
     }
 
-    if (event->mask & IN_MOVED_FROM)
+    if (event->mask & IN_DELETE || event->mask & IN_MOVED_FROM)
     {
-        string dir = "dir/" + client->getUsername() + "/" + filename;
-        remove(dir.c_str());
-        cout << "removido: " << dir << endl;
-        printf("The file %s was removed to folder with WD %d\n", event->name, event->wd);
+        Packet packet(0, 1, MessageType::DELETE, Status::SUCCESS, filename.size(), filename.c_str());
+        sendPacket(client->getSocketId(), packet);
     }
 
-    if (event->mask & IN_CLOSE_WRITE)
+    if (event->mask & IN_CLOSE_WRITE || event->mask == IN_MOVED_TO)
     {
         sendFile(client->getSocketId(), DIR_NAME, filename);
-
-        printf("The file %s was modified with WD %d\n", event->name, event->wd);
     }
 }
 

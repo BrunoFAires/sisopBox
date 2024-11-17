@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <Packet.h>
 #include <list>
+#include <filesystem>
 #include <string.h>
 #include "FileDispacher.h"
 
@@ -18,5 +19,6 @@ Packet receivePacket(int socket_id);
 void receiveFile(Packet packet, int socket_id, optional<string> username, string dirName);
 void sendFile(int socket_id, string dir, string filename);
 void sendFile(int socket_id, string dir, string filename, bool syncFile);
+void deleteFile(string filePath);
 
 #endif

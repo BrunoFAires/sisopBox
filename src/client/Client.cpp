@@ -105,11 +105,17 @@ int Client::getSocketId()
 
 void Client::sync()
 {
-    while(true){
+    while (true)
+    {
         Packet receivedPacket = receivePacket(clientSocket);
-        if(receivedPacket.isSyncPacket()){
-            cout << "chegou";
-            receiveFile(receivedPacket, clientSocket, username, "sync_dir");
+        if (receivedPacket.isSyncPacket())
+        {
+            receiveFile(receivedPacket, clientSocket, nullopt, "sync_dir");
+        }
+        if (receivedPacket.isDeletePacket())
+        {
+            string path = "sync_dir" + string(receivedPacket.getMessage());
+            deleteFile(path);
         }
     }
 }

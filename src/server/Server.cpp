@@ -104,9 +104,11 @@ void Server::handle_client_activity(int socket_id)
         else if (receivedPacket.isDataPacket())
         {
             string username = global_settings::socket_id_dictionary.get(socket_id);
-            int a = global_settings::socket_id_dictionary.findFirstDifferentValue(username, socket_id);
-
-            cout << a << endl;
+            auto syncDeviceSocket = global_settings::socket_id_dictionary.findFirstDifferentValue(username, socket_id);
+            if (syncDeviceSocket)
+            {
+                cout << *syncDeviceSocket;
+            }
 
             receiveFile(receivedPacket, socket_id, username);
         }

@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <shared_mutex>
 #include <array>
+#include <optional>
 
 using namespace std;
 
@@ -36,7 +37,7 @@ public:
         return V();
     }
 
-    K findFirstDifferentValue(const V &value, const K &key)
+    optional<K> findFirstDifferentValue(const V &value, const K &key)
     {
         for (const auto &[k, v] : dictionary)
         {
@@ -45,7 +46,7 @@ public:
                 return k;
             }
         }
-        return K();
+        return std::nullopt;
     }
 
     bool contains(const K &key) const

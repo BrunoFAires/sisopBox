@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
 
 
         thread watcherThread1(&Notify::init, &notify);
-        thread watcherThread2(&Client::sync, &client);
         thread watcherThread3(&Client::cli, &client);
+        thread watcherThread2(&Client::sync, &client);
         
         watcherThread1.join();
         watcherThread2.join();

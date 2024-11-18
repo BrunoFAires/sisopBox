@@ -136,6 +136,10 @@ void Client::sync()
         {
             cout << receivedPacket.getMessage() << endl;
         }
+        else if (receivedPacket.isDisconnectionPacket())
+        {
+            exit(0);
+        }
     }
 }
 

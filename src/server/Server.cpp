@@ -91,10 +91,21 @@ void Server::handle_client_activity(int socket_id)
             string username = receivedPacket.getMessage();
             bool success = global_settings::connect_client(socket_id, username);
             std::string message = success ? "Conexão bem-sucedida." : "Erro ao conectar.";
-            Packet replyPacket(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.size(), message.c_str());
-            string userDirFolderName = string(DIR_NAME) + "/" + username;
-            createDir(userDirFolderName.c_str());
-            sendPacket(socket_id, replyPacket);
+
+            if (success)
+            {
+                Packet replyPacket(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.size(), message.c_str());
+                string userDirFolderName = string(DIR_NAME) + "/" + username;
+                createDir(userDirFolderName.c_str());
+                sendPacket(socket_id, replyPacket);
+            }
+            else
+            {
+                global_settings::disconnect_client(socket_id, global_settings::socket_id_dictionary.get(socket_id));
+                Packet replyPacket(1, 1, MessageType::DISCONNECTION, Status::SUCCESS, 0, "");
+                sendPacket(socket_id, replyPacket);
+                break;
+            }
         }
         else if (receivedPacket.isDisconnectionPacket())
         {

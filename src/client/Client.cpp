@@ -164,7 +164,7 @@ void Client::processCommand(const string commandLine)
     {
         if (!argument.empty())
         {
-            sendFile(clientSocket, "sync_dir", argument);
+            sendFile(clientSocket, "..", argument);
         }
         else
         {

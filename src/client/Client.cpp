@@ -114,7 +114,6 @@ void Client::sync()
     while (true)
     {
         Packet receivedPacket = receivePacket(clientSocket);
-        cout << receivedPacket.getMessage();
         if (receivedPacket.isSyncPacket())
         {
             receiveFile(receivedPacket, clientSocket, nullopt, "sync_dir");

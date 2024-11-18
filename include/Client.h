@@ -13,6 +13,7 @@ private:
     struct sockaddr_in serverAddress;
     Client connectToServer(const string &username, const string &serverIP, int serverPort);
     void createSyncDir();
+    void createCLientDownloadDir();
     void processCommand(const string commandLine);
     void signalHandler(int signal);
 

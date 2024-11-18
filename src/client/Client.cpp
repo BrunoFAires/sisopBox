@@ -81,6 +81,12 @@ void Client::createSyncDir()
         filesystem::create_directory(DIR_NAME);
 }
 
+void Client::createCLientDownloadDir()
+{
+    if (!filesystem::exists("downloads"))
+        filesystem::create_directory("downloads");
+}
+
 void Client::sendMessage()
 {
     while (true)
@@ -123,7 +129,7 @@ void Client::sync()
         else if (receivedPacket.isDownloadPacket())
         {
             string path = "download/" + string(receivedPacket.getMessage());
-            receiveFile(receivedPacket, clientSocket, nullopt, "download");
+            receiveFile(receivedPacket, clientSocket, nullopt, "downloads");
         }
         else if (receivedPacket.isInfoPacket())
         {

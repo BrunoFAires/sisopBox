@@ -34,32 +34,32 @@ Client::~Client()
 
 Client Client::connectToServer(const string &username, const string &serverIP, int serverPort)
 {
-
-    clientSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (clientSocket < 0)
+    int newClientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (newClientSocket < 0)
     {
         cerr << "Erro ao criar o socket." << endl;
         exit(EXIT_FAILURE);
     }
 
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(serverPort);
+    struct sockaddr_in newServerAddress;
+    newServerAddress.sin_family = AF_INET;
+    newServerAddress.sin_port = htons(serverPort);
 
-    if (inet_pton(AF_INET, serverIP.c_str(), &serverAddress.sin_addr) <= 0)
+    if (inet_pton(AF_INET, serverIP.c_str(), &newServerAddress.sin_addr) <= 0)
     {
         cerr << "Endereço IP inválido." << endl;
         throw runtime_error("Endereço IP inválido.");
     }
 
-    if (connect(clientSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
+    if (connect(newClientSocket, (struct sockaddr *)&newServerAddress, sizeof(newServerAddress)) < 0)
     {
         cerr << "Erro ao conectar ao servidor." << endl;
         throw invalid_argument("Erro ao conectar ao servidor.");
     }
 
     Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, username.size(), username.c_str());
-    sendPacket(clientSocket, packet);
-    packet = receivePacket(clientSocket);
+    sendPacket(newClientSocket, packet);
+    packet = receivePacket(newClientSocket);
 
     if (packet.isStatusError())
     {
@@ -68,11 +68,7 @@ Client Client::connectToServer(const string &username, const string &serverIP, i
 
     cout << "Conectado ao servidor!" << endl;
 
-    this->username = username;
-    this->clientSocket = clientSocket;
-    this->serverAddress = serverAddress;
-
-    return *this;
+    return Client(username, newClientSocket, newServerAddress);
 }
 
 void Client::createSyncDir()
@@ -118,6 +114,7 @@ void Client::sync()
     while (true)
     {
         Packet receivedPacket = receivePacket(clientSocket);
+        cout << receivedPacket.getMessage();
         if (receivedPacket.isSyncPacket())
         {
             receiveFile(receivedPacket, clientSocket, nullopt, "sync_dir");
@@ -138,6 +135,7 @@ void Client::sync()
         }
         else if (receivedPacket.isDisconnectionPacket())
         {
+            stopRequested = true;
             exit(0);
         }
     }
@@ -230,7 +228,7 @@ void Client::cli()
 
     std::string input;
 
-    while (true)
+    while (!stopRequested)
     {
         std::cout << "> ";
         std::getline(std::cin, input);

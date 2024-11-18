@@ -2,6 +2,7 @@
 #define CLIENT_H
 #include <netinet/in.h>
 #include <string>
+#include <atomic>
 
 using namespace std;
 
@@ -11,6 +12,7 @@ private:
     string username;
     int clientSocket;
     struct sockaddr_in serverAddress;
+    std::atomic<bool> stopRequested{false};
     Client connectToServer(const string &username, const string &serverIP, int serverPort);
     void createSyncDir();
     void createClientDownloadDir();

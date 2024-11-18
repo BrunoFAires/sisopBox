@@ -56,12 +56,10 @@ int Notify::init()
 bool isSyncFile(string filename)
 {
     const std::string suffix = ".sync";
-    // Verifica se o tamanho da string é suficiente para conter o sufixo
     if (filename.size() < suffix.size())
     {
         return false;
     }
-    // Compara o final da string com o sufixo
     return filename.compare(filename.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 void Notify::handleFileChange(inotify_event *event, int wd)

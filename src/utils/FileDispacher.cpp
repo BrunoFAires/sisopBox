@@ -24,7 +24,6 @@ list<Packet> filePacking(string dir, const string fileName, bool syncFile, bool 
     if (!file.is_open())
     {
         cerr << "ERROR: couldn't open file." << endl;
-        // TODO: algum jeito de interromper a função em caso de erro.
     }
 
     MessageType type;

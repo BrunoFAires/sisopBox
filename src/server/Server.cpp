@@ -101,8 +101,7 @@ void Server::handle_client_activity(int socket_id)
             }
             else
             {
-                global_settings::disconnect_client(socket_id, global_settings::socket_id_dictionary.get(socket_id));
-                Packet replyPacket(1, 1, MessageType::DISCONNECTION, Status::SUCCESS, 0, "");
+                Packet replyPacket(1, 1, MessageType::DISCONNECTION, Status::ERROR, 0, "");
                 sendPacket(socket_id, replyPacket);
                 break;
             }

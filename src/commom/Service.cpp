@@ -65,6 +65,10 @@ Packet receivePacket(int socket_id)
 
     if (recevedPacket.isStatusError())
     {
+        if (recevedPacket.isDisconnectionPacket())
+        {
+            throw std::invalid_argument("Limite máximo de conexões por usuário excedido.");
+        }
         throw std::invalid_argument("Ocorreu um erro ao processar o pacote recebido.");
     }
 

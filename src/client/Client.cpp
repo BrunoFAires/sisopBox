@@ -105,6 +105,8 @@ int Client::getSocketId()
 
 void Client::sync()
 {
+    Packet packet(0, 1, MessageType::FETCH, Status::SUCCESS, username.size(), username.c_str());
+    sendPacket(clientSocket, packet);
     while (true)
     {
         Packet receivedPacket = receivePacket(clientSocket);

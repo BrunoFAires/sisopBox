@@ -118,6 +118,8 @@ void Server::handle_client_activity(int socket_id)
         {
             string username = global_settings::socket_id_dictionary.get(socket_id);
             auto syncDeviceSocket = global_settings::socket_id_dictionary.findFirstDifferentValue(username, socket_id);
+            string path = "dir/" + username + "/" + receivedPacket.getMessage();
+            remove(path.c_str());
             if (syncDeviceSocket)
             {
                 sendPacket(*syncDeviceSocket, receivedPacket);
@@ -125,6 +127,7 @@ void Server::handle_client_activity(int socket_id)
         }
         else if (receivedPacket.isFetchPacket())
         {
+            cout << "aaaa" << endl;
             string username = global_settings::socket_id_dictionary.get(socket_id);
             syncFiles(socket_id, "dir", username);
         }

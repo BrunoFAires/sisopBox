@@ -78,7 +78,14 @@ void fileUnpacking(list<Packet> &packets, string dirName)
 
     string fileName = packets.front().getMessage();
     packets.pop_front();
+
+    cout << fileName << endl;
+
     std::string fullPath = dirName + "/" + fileName;
+
+    cout << dirName << endl;
+    cout << fullPath << endl;
+
     std::ofstream file(fullPath, std::ios::binary | std::ios::trunc);
 
     if (!file)

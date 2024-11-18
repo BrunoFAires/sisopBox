@@ -123,6 +123,11 @@ void Server::handle_client_activity(int socket_id)
                 sendPacket(*syncDeviceSocket, receivedPacket);
             }
         }
+        else if (receivedPacket.isFetchPacket())
+        {
+            string username = global_settings::socket_id_dictionary.get(socket_id);
+            syncFiles(socket_id, "dir", username);
+        }
     }
     close(socket_id);
 }

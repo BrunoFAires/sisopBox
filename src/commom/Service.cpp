@@ -114,8 +114,34 @@ void sendFile(int socket_id, string dir, string filename, bool syncFile)
     }
 }
 
+void syncFiles(int socket_id, string dir, string username)
+{
+    try
+    {
+        string dirName = dir + "/" + username;
+        for (const auto& entry : std::filesystem::directory_iterator(dirName))
+        {
+            if (entry.is_regular_file())
+            {
+                const std::string& filename = entry.path().filename().string(); 
+                sendFile(socket_id, dirName, filename, true);
+            }
+        }
+    }
+    catch (const std::filesystem::filesystem_error& e)
+    {
+        std::cerr << "Erro ao acessar o diretório: " << e.what() << '\n';
+    }
+}
+
 void deleteFile(string filePath)
 {
     cout << filePath << endl;
     remove(filePath.c_str());
+}
+
+void getSyncDir(int socket_id, string username)
+{
+    Packet packet(0, 1, MessageType::FETCH, Status::SUCCESS, username.size(), username.c_str());
+    sendPacket(socket_id, packet);
 }

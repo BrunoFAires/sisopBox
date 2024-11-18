@@ -20,5 +20,7 @@ void receiveFile(Packet packet, int socket_id, optional<string> username, string
 void sendFile(int socket_id, string dir, string filename);
 void sendFile(int socket_id, string dir, string filename, bool syncFile);
 void deleteFile(string filePath);
+void getSyncDir();
+void syncFiles(int socket_id, string dir, string username);
 
 #endif

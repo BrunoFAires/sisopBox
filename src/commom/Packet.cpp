@@ -56,6 +56,12 @@ bool Packet::isDeletePacket()
     return messageType == MessageType::DELETE;
 }
 
+bool Packet::isFetchPacket()
+{
+    return messageType == MessageType::FETCH;
+}
+
+
 void Packet::setStatus(Status status)
 {
     this->status = status;

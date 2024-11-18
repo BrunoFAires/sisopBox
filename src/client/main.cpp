@@ -26,8 +26,11 @@ int main(int argc, char *argv[])
 
         thread watcherThread1(&Notify::init, &notify);
         thread watcherThread2(&Client::sync, &client);
+        thread watcherThread3(&Client::cli, &client);
+        
         watcherThread1.join();
         watcherThread2.join();
+        watcherThread3.join();
     }
     catch (runtime_error &e)
     {

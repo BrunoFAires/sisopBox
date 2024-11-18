@@ -12,3 +12,6 @@
 *.json
 
 **/sync_dir
+
+/sync_dir
+/dir

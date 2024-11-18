@@ -13,6 +13,8 @@ private:
     struct sockaddr_in serverAddress;
     Client connectToServer(const string &username, const string &serverIP, int serverPort);
     void createSyncDir();
+    void processCommand(const string commandLine);
+    void signalHandler(int signal);
 
 public:
     Client();
@@ -24,6 +26,7 @@ public:
     void sendMessage();
     Client run(const string &username, const string &serverIP, int serverPort);
     void sync();
+    void cli();
 };
 
 #endif

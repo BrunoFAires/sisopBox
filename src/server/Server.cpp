@@ -111,7 +111,7 @@ void Server::handle_client_activity(int socket_id)
             {
                 string filename = receivedPacket.getMessage();
                 string dirName = "dir/" + username;
-                sendFile(*syncDeviceSocket, dirName, filename, true);
+                sendFile(*syncDeviceSocket, dirName, filename, true, false);
             }
         }
         else if (receivedPacket.isDeletePacket())
@@ -120,6 +120,7 @@ void Server::handle_client_activity(int socket_id)
             auto syncDeviceSocket = global_settings::socket_id_dictionary.findFirstDifferentValue(username, socket_id);
             string path = "dir/" + username + "/" + receivedPacket.getMessage();
             remove(path.c_str());
+
             if (syncDeviceSocket)
             {
                 sendPacket(*syncDeviceSocket, receivedPacket);
@@ -127,9 +128,23 @@ void Server::handle_client_activity(int socket_id)
         }
         else if (receivedPacket.isFetchPacket())
         {
-            cout << "aaaa" << endl;
             string username = global_settings::socket_id_dictionary.get(socket_id);
             syncFiles(socket_id, "dir", username);
+        }
+        else if (receivedPacket.isDownloadPacket())
+        {
+            string username = global_settings::socket_id_dictionary.get(socket_id);
+            string filename = receivedPacket.getMessage();
+            string dirName = "dir/" + username;
+            sendFile(socket_id, dirName, filename, false, true);
+        }
+        else if (receivedPacket.isInfoPacket())
+        {
+            string username = receivedPacket.getMessage();
+            string dirName = "dir/" + username;
+            string result = listfFilesInfo(dirName);
+            Packet replyPacket(1, 1, MessageType::INFO, Status::SUCCESS, result.size(), result.c_str());
+            sendPacket(socket_id, replyPacket);
         }
     }
     close(socket_id);

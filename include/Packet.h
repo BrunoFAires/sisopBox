@@ -12,7 +12,9 @@ enum class MessageType
     DISCONNECTION = 3,
     SYNC = 4,
     DELETE = 5,
-    FETCH = 6
+    FETCH = 6,
+    DOWNLOAD = 7,
+    INFO = 8,
 };
 
 enum class Status
@@ -54,6 +56,8 @@ public:
     bool isSyncPacket();
     bool isDeletePacket();
     bool isFetchPacket();
+    bool isDownloadPacket();
+    bool isInfoPacket();
 
     size_t size() const;
     size_t headerSize() const;

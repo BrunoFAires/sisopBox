@@ -61,6 +61,17 @@ bool Packet::isFetchPacket()
     return messageType == MessageType::FETCH;
 }
 
+bool Packet::isDownloadPacket()
+{
+    return messageType == MessageType::DOWNLOAD;
+}
+
+bool Packet::isInfoPacket()
+{
+    return messageType == MessageType::INFO;
+}
+
+
 
 void Packet::setStatus(Status status)
 {

@@ -16,7 +16,7 @@
 
 using namespace std;
 
-list<Packet> filePacking(string dir, const string fileName, bool syncFile)
+list<Packet> filePacking(string dir, const string fileName, bool syncFile, bool download)
 {
 
     ifstream file(string(dir) + "/" + fileName, std::ios::binary);
@@ -27,7 +27,20 @@ list<Packet> filePacking(string dir, const string fileName, bool syncFile)
         // TODO: algum jeito de interromper a função em caso de erro.
     }
 
-    MessageType type = syncFile ? MessageType::SYNC : MessageType::DATA;
+    MessageType type;
+
+    if (syncFile)
+    {
+        type = MessageType::SYNC;
+    }
+    else if (download)
+    {
+        type = MessageType::DOWNLOAD;
+    }
+    else
+    {
+        type = MessageType::DATA;
+    }
 
     list<Packet> filePackets;
     uint32_t id = 1;
@@ -79,12 +92,7 @@ void fileUnpacking(list<Packet> &packets, string dirName)
     string fileName = packets.front().getMessage();
     packets.pop_front();
 
-    cout << fileName << endl;
-
     std::string fullPath = dirName + "/" + fileName;
-
-    cout << dirName << endl;
-    cout << fullPath << endl;
 
     std::ofstream file(fullPath, std::ios::binary | std::ios::trunc);
 

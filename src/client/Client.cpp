@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <string>
 #include <filesystem>
+#include <csignal>
 
 #include <Client.h>
 #include <Packet.h>
@@ -47,13 +48,13 @@ Client Client::connectToServer(const string &username, const string &serverIP, i
     if (inet_pton(AF_INET, serverIP.c_str(), &serverAddress.sin_addr) <= 0)
     {
         cerr << "Endereço IP inválido." << endl;
-        throw std::runtime_error("Endereço IP inválido.");
+        throw runtime_error("Endereço IP inválido.");
     }
 
     if (connect(clientSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
     {
         cerr << "Erro ao conectar ao servidor." << endl;
-        throw std::invalid_argument("Erro ao conectar ao servidor.");
+        throw invalid_argument("Erro ao conectar ao servidor.");
     }
 
     Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, username.size(), username.c_str());
@@ -62,7 +63,7 @@ Client Client::connectToServer(const string &username, const string &serverIP, i
 
     if (packet.isStatusError())
     {
-        throw std::invalid_argument("Erro ao conectar ao servidor.");
+        throw invalid_argument("Erro ao conectar ao servidor.");
     }
 
     cout << "Conectado ao servidor!" << endl;
@@ -76,8 +77,8 @@ Client Client::connectToServer(const string &username, const string &serverIP, i
 
 void Client::createSyncDir()
 {
-    if (!std::filesystem::exists(DIR_NAME))
-        std::filesystem::create_directory(DIR_NAME);
+    if (!filesystem::exists(DIR_NAME))
+        filesystem::create_directory(DIR_NAME);
 }
 
 void Client::sendMessage()
@@ -114,10 +115,115 @@ void Client::sync()
         {
             receiveFile(receivedPacket, clientSocket, nullopt, "sync_dir");
         }
-        if (receivedPacket.isDeletePacket())
+        else if (receivedPacket.isDeletePacket())
         {
             string path = "sync_dir/" + string(receivedPacket.getMessage());
             deleteFile(path);
         }
+        else if (receivedPacket.isDownloadPacket())
+        {
+            string path = "download/" + string(receivedPacket.getMessage());
+            receiveFile(receivedPacket, clientSocket, nullopt, "download");
+        }
+        else if (receivedPacket.isInfoPacket())
+        {
+            cout << receivedPacket.getMessage() << endl;
+        }
+    }
+}
+
+void Client::processCommand(const string commandLine)
+{
+    istringstream stream(commandLine);
+    string command, argument;
+    stream >> command;
+    getline(stream, argument);
+
+    if (!argument.empty())
+    {
+        size_t pos = argument.find_first_not_of(" ");
+        if (pos != std::string::npos)
+        {
+            argument = argument.substr(pos);
+        }
+        else
+        {
+            argument.clear();
+        }
+    }
+
+    if (command == "upload")
+    {
+        if (!argument.empty())
+        {
+            sendFile(clientSocket, "sync_dir", argument);
+        }
+        else
+        {
+            cout << "Erro: O nome do arquivo é obrigatório.\n";
+        }
+    }
+    else if (command == "download")
+    {
+        if (!argument.empty())
+        {
+            Packet packet(0, 1, MessageType::DOWNLOAD, Status::SUCCESS, argument.size(), argument.c_str());
+            sendPacket(clientSocket, packet);
+        }
+        else
+        {
+            cout << "Erro: O nome do arquivo é obrigatório.\n";
+        }
+    }
+    else if (command == "delete")
+    {
+        if (!argument.empty())
+        {
+            Packet packet(0, 1, MessageType::DELETE, Status::SUCCESS, argument.size(), argument.c_str());
+            sendPacket(clientSocket, packet);
+            string path = "sync_dir/" + argument;
+            remove(path.c_str());
+        }
+        else
+        {
+            cout << "Erro: O nome do arquivo é obrigatório.\n";
+        }
+    }
+    else if (command == "list_server")
+    {
+        Packet packet(0, 1, MessageType::INFO, Status::SUCCESS, username.size(), username.c_str());
+        sendPacket(clientSocket, packet);
+    }
+    else if (command == "list_client")
+    {
+        cout << listfFilesInfo("sync_dir") << endl;
+    }
+    else if (command == "get_sync_dir")
+    {
+        getSyncDir(clientSocket, username);
+    }
+    else if (command == "exit")
+    {
+        Packet packet(0, 1, MessageType::DISCONNECTION, Status::SUCCESS, 0, "");
+        sendPacket(clientSocket, packet);
+        exit(0);
+    }
+    else
+    {
+        cerr << "Error: Unknown command.\n";
+    }
+}
+
+void Client::cli()
+{
+
+    std::string input;
+
+    while (true)
+    {
+        std::cout << "> ";
+        std::getline(std::cin, input);
+
+        processCommand(input);
     }
 }

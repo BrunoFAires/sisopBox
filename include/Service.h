@@ -7,6 +7,10 @@
 #include <list>
 #include <filesystem>
 #include <string.h>
+#include <sys/stat.h>
+#include <chrono>
+
+
 #include "FileDispacher.h"
 
 #include <Service.h>
@@ -18,9 +22,10 @@ void sendPacket(int socketdId, Packet packet);
 Packet receivePacket(int socket_id);
 void receiveFile(Packet packet, int socket_id, optional<string> username, string dirName);
 void sendFile(int socket_id, string dir, string filename);
-void sendFile(int socket_id, string dir, string filename, bool syncFile);
+void sendFile(int socket_id, string dir, string filename, bool syncFile, bool download);
 void deleteFile(string filePath);
-void getSyncDir();
+void getSyncDir(int socket_id, string username);
 void syncFiles(int socket_id, string dir, string username);
+string listfFilesInfo(string dir);
 
 #endif

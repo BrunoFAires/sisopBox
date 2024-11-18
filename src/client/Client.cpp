@@ -81,7 +81,7 @@ void Client::createSyncDir()
         filesystem::create_directory(DIR_NAME);
 }
 
-void Client::createCLientDownloadDir()
+void Client::createClientDownloadDir()
 {
     if (!filesystem::exists("downloads"))
         filesystem::create_directory("downloads");
@@ -97,6 +97,7 @@ void Client::sendMessage()
 Client Client::run(const string &username, const string &serverIP, int serverPort)
 {
     createSyncDir();
+    createClientDownloadDir();
     return connectToServer(username, serverIP, serverPort);
 }
 

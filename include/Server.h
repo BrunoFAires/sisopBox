@@ -14,9 +14,12 @@ class Server
         int serverSocket;
         struct sockaddr_in serverAddress;
         vector<thread> clientThreads;
+        chrono::steady_clock::time_point lastHeartbeat;
+
 
         static void handle_client_activity(int socket_id, int secundary);
         static void backup_process(int socket_id, int secundary);
+        static void heartbeatRequest();
 
     public:
 

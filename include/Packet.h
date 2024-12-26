@@ -19,7 +19,8 @@ enum class MessageType
     DISCONNECTION_SERVER = 10,
     CLIENT = 11,
     SOCKET = 12,
-    IP = 13
+    IP = 13,
+    HEARTBEAT = 14
 };
 
 enum class Status
@@ -68,6 +69,8 @@ public:
     bool isClientPacket();
     bool isSocketPacket();
     bool isIpPacket();
+    bool isHeartbeatPacket();
+
 
     size_t size() const;
     size_t headerSize() const;

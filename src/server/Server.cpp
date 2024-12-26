@@ -37,6 +37,7 @@ Server::Server(string ip, int port)
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port);
     serverAddress.sin_addr.s_addr = INADDR_ANY;
+    lastHeartbeat = chrono::steady_clock::now();
 
     if (bind(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
     {
@@ -78,6 +79,8 @@ void Server::start()
         }
         clientThreads.emplace_back([this, socket_id]()
                                    { this->handle_client_activity(socket_id, 0); });
+        std::thread heartbeatThread(heartbeatRequest);
+        heartbeatThread.detach();
     }
 }
 
@@ -113,6 +116,7 @@ void Server::startBackup(string &serverIp, int serverPort)
     {
         createDir("secundario");
         handle_client_activity(newClientSocket, 1);
+        principalServerSocket = newClientSocket;
     }
     else
     {
@@ -125,6 +129,21 @@ void sendClientInfo(int socketId, string info1, string info2, MessageType messag
     string message = info1 + ":" + info2;
     Packet packet(1, 1, messageType, Status::SUCCESS, message.size(), message.c_str());
     sendPacket(socketId, packet);
+}
+void Server::heartbeatRequest()
+{
+    while (true)
+    {
+        vector<string> secundaryIps = global_settings::servers.keys();
+        for (string secundaryIp : secundaryIps)
+        {
+            int secondarySocketId = global_settings::servers.get(secundaryIp);
+            cout << "Heartbeat enviado " << to_string(secondarySocketId) << endl;
+            Packet packet(1, 1, MessageType::HEARTBEAT, Status::SUCCESS, 0, "");
+            sendPacket(secondarySocketId, packet);
+        }
+        sleep(2);
+    }
 }
 
 void Server::handle_client_activity(int socket_id, int secondary)
@@ -263,6 +282,7 @@ void Server::handle_client_activity(int socket_id, int secondary)
             string serverIp = receivedPacket.getMessage();
             bool success = global_settings::connect_server(socket_id, serverIp);
             std::string message = success ? "Conexão bem-sucedida do servidor secundário" : "Erro ao conectar.";
+            cout << message << endl;
             if (success)
             {
                 Packet replyPacket(1, 1, MessageType::CONNECTION_SERVER, Status::SUCCESS, message.size(), message.c_str());

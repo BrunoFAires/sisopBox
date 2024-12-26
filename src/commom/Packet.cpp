@@ -93,6 +93,11 @@ bool Packet::isIpPacket()
     return messageType == MessageType::IP;
 }
 
+bool Packet::isHeartbeatPacket()
+{
+    return messageType == MessageType::HEARTBEAT;
+}
+
 void Packet::setStatus(Status status)
 {
     this->status = status;

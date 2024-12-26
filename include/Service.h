@@ -26,6 +26,7 @@ void sendFile(int socket_id, string dir, string filename, bool syncFile, bool do
 void deleteFile(string filePath);
 void getSyncDir(int socket_id, string username);
 void syncFiles(int socket_id, string dir, string username);
+void sendClients(int socket_id, string clientSocket, string username);
 string listfFilesInfo(string dir);
 
 #endif

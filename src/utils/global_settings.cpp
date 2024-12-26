@@ -7,9 +7,11 @@
 using namespace std;
 
 concurrent_dictionary<string, int> global_settings::client_name_dictionary;
+concurrent_dictionary<int, string> global_settings::client_ip;
 concurrent_dictionary<int, string> global_settings::socket_id_dictionary;
+concurrent_dictionary<string, int> global_settings::servers;
 
-bool global_settings::connect_client(int socket_id, string client_name)
+bool global_settings::connect_client(int socket_id, string client_name, string clientIp)
 {
     int socket_ids = 1;
     bool success = false;
@@ -44,9 +46,26 @@ bool global_settings::connect_client(int socket_id, string client_name)
     {
         client_name_dictionary.insert_or_update(client_name, socket_ids);
         socket_id_dictionary.insert_or_update(socket_id, client_name);
+        client_ip.insert_or_update(socket_id, clientIp);
     }
 
     cout << terminal_output.str() << endl;
+
+    return success;
+}
+
+bool global_settings::connect_server(int socket_id, string server_ip)
+{
+
+    bool success = false;
+
+    bool server_exists = servers.contains(server_ip);
+
+    if (!server_exists)
+    {
+        servers.insert_or_update(server_ip, socket_id);
+        success = true;
+    }
 
     return success;
 }
@@ -63,9 +82,17 @@ bool global_settings::disconnect_client(int socket_id, string client_name)
     {
         int socket_ids = client_name_dictionary.get(client_name);
         socket_ids--;
-        client_name_dictionary.insert_or_update(client_name, socket_ids);
+        if (socket_ids == 0)
+        {
+            client_name_dictionary.remove(client_name);
+        }
+        else
+        {
+            client_name_dictionary.insert_or_update(client_name, socket_ids);
+        }
 
         socket_id_dictionary.remove(socket_id);
+        client_ip.remove(socket_id);
 
         success = true;
         terminal_output << "Disconnect: connected client; Client: " << client_name << " socketId: " << socket_ids;

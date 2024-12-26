@@ -44,6 +44,7 @@ Client Client::connectToServer(const string &username, const string &serverIP, i
     struct sockaddr_in newServerAddress;
     newServerAddress.sin_family = AF_INET;
     newServerAddress.sin_port = htons(serverPort);
+    newServerAddress.sin_addr.s_addr = INADDR_ANY;
 
     if (inet_pton(AF_INET, serverIP.c_str(), &newServerAddress.sin_addr) <= 0)
     {
@@ -57,7 +58,11 @@ Client Client::connectToServer(const string &username, const string &serverIP, i
         throw invalid_argument("Erro ao conectar ao servidor.");
     }
 
-    Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, username.size(), username.c_str());
+    string clientIP = inet_ntoa(newServerAddress.sin_addr);
+    string message = username + ":" + clientIP;
+
+
+    Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.size(), message.c_str());
     sendPacket(newClientSocket, packet);
     packet = receivePacket(newClientSocket);
 

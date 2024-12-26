@@ -71,7 +71,27 @@ bool Packet::isInfoPacket()
     return messageType == MessageType::INFO;
 }
 
+bool Packet::isConnectionServer()
+{
+    return messageType == MessageType::CONNECTION_SERVER;
+}
 
+bool Packet::isDisconnectionServer()
+{
+    return messageType == MessageType::DISCONNECTION_SERVER;
+}
+bool Packet::isClientPacket()
+{
+    return messageType == MessageType::CLIENT;
+}
+bool Packet::isSocketPacket()
+{
+    return messageType == MessageType::SOCKET;
+}
+bool Packet::isIpPacket()
+{
+    return messageType == MessageType::IP;
+}
 
 void Packet::setStatus(Status status)
 {

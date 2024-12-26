@@ -4,6 +4,7 @@
 #include <shared_mutex>
 #include <array>
 #include <optional>
+#include <vector>
 
 using namespace std;
 
@@ -59,5 +60,17 @@ public:
     {
         unique_lock lock(mutex);
         dictionary.clear();
+    }
+
+    vector<K> keys() const
+    {
+        shared_lock lock(mutex);
+        vector<K> keys;
+        keys.reserve(dictionary.size());
+        for (const auto &pair : dictionary)
+        {
+            keys.push_back(pair.first);
+        }
+        return keys;
     }
 };

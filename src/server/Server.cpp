@@ -4,11 +4,13 @@
 #include <unistd.h>
 #include <cstring>
 #include <string>
+#include <filesystem>
 
 #include <Server.h>
 #include <Service.h>
 #include <Packet.h>
 #include <global_settings.h>
+#include <arpa/inet.h>
 
 #define DIR_NAME "dir"
 #define PORT 5000
@@ -21,7 +23,7 @@ void createDir(const char *dirName)
         std::filesystem::create_directory(dirName);
 }
 
-Server::Server()
+Server::Server(string ip, int port)
 {
     createDir(DIR_NAME);
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -33,7 +35,7 @@ Server::Server()
     }
 
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(PORT);
+    serverAddress.sin_port = htons(port);
     serverAddress.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
@@ -75,11 +77,57 @@ void Server::start()
             continue;
         }
         clientThreads.emplace_back([this, socket_id]()
-                                   { this->handle_client_activity(socket_id); });
+                                   { this->handle_client_activity(socket_id, 0); });
     }
 }
 
-void Server::handle_client_activity(int socket_id)
+void Server::startBackup(string &serverIp, int serverPort)
+{
+
+    int newClientSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    printf("%s, %d\n", serverIp.c_str(), serverPort);
+
+    struct sockaddr_in newServerAddress;
+    newServerAddress.sin_family = AF_INET;
+    newServerAddress.sin_port = htons(serverPort);
+
+    if (inet_pton(AF_INET, serverIp.c_str(), &newServerAddress.sin_addr) <= 0)
+    {
+        cerr << "Endereço IP inválido." << endl;
+        throw runtime_error("Endereço IP inválido.");
+    }
+
+    if (connect(newClientSocket, (struct sockaddr *)&newServerAddress, sizeof(newServerAddress)) < 0)
+    {
+        cerr << "Erro ao conectar ao servidor." << endl;
+        throw invalid_argument("Erro ao conectar ao servidor.");
+    }
+
+    Packet packet(1, 1, MessageType::CONNECTION_SERVER, Status::SUCCESS, serverIp.size(), serverIp.c_str());
+    sendPacket(newClientSocket, packet);
+
+    Packet receivedPacket = receivePacket(newClientSocket);
+
+    if (!receivedPacket.isStatusError())
+    {
+        createDir("secundario");
+        handle_client_activity(newClientSocket, 1);
+    }
+    else
+    {
+        cout << "Erro ao conectar ao servidor principal" << endl;
+    }
+}
+
+void sendClientInfo(int socketId, string info1, string info2, MessageType messageType)
+{
+    string message = info1 + ":" + info2;
+    Packet packet(1, 1, messageType, Status::SUCCESS, message.size(), message.c_str());
+    sendPacket(socketId, packet);
+}
+
+void Server::handle_client_activity(int socket_id, int secondary)
 {
     while (true)
     {
@@ -88,8 +136,11 @@ void Server::handle_client_activity(int socket_id)
 
         if (receivedPacket.isConnectionPacket())
         {
-            string username = receivedPacket.getMessage();
-            bool success = global_settings::connect_client(socket_id, username);
+            string fullMessage = receivedPacket.getMessage();
+            string username = fullMessage.substr(0, fullMessage.find(':'));
+            string clientIp = fullMessage.substr(fullMessage.find(':'), fullMessage.size());
+
+            bool success = global_settings::connect_client(socket_id, username, clientIp);
             std::string message = success ? "Conexão bem-sucedida." : "Erro ao conectar.";
 
             if (success)
@@ -98,6 +149,10 @@ void Server::handle_client_activity(int socket_id)
                 string userDirFolderName = string(DIR_NAME) + "/" + username;
                 createDir(userDirFolderName.c_str());
                 sendPacket(socket_id, replyPacket);
+
+                sendClientInfo(socket_id, username, to_string(socket_id), MessageType::CLIENT);
+                sendClientInfo(socket_id, to_string(socket_id), username, MessageType::SOCKET);
+                sendClientInfo(socket_id, to_string(socket_id), clientIp, MessageType::IP);
             }
             else
             {
@@ -109,31 +164,78 @@ void Server::handle_client_activity(int socket_id)
         else if (receivedPacket.isDisconnectionPacket())
         {
             global_settings::disconnect_client(socket_id, global_settings::socket_id_dictionary.get(socket_id));
-            break;
+            if (!secondary)
+            {
+                vector<string> secundaryIps = global_settings::servers.keys();
+                for (string secundaryIp : secundaryIps)
+                {
+                    int secondarySocketId = global_settings::servers.get(secundaryIp);
+                    sendPacket(secondarySocketId, receivedPacket);
+                }
+                break;
+            }
+            else
+            {
+            }
         }
         else if (receivedPacket.isDataPacket())
         {
-            string username = global_settings::socket_id_dictionary.get(socket_id);
-            receiveFile(receivedPacket, socket_id, username, "dir");
-            auto syncDeviceSocket = global_settings::socket_id_dictionary.findFirstDifferentValue(username, socket_id);
 
-            if (syncDeviceSocket)
+            if (!secondary)
             {
-                string filename = receivedPacket.getMessage();
-                string dirName = "dir/" + username;
-                sendFile(*syncDeviceSocket, dirName, filename, true, false);
+                string username = global_settings::socket_id_dictionary.get(socket_id);
+                receiveFile(receivedPacket, socket_id, username, secondary ? "secundario" : "dir");
+                auto syncDeviceSocket = global_settings::socket_id_dictionary.findFirstDifferentValue(username, socket_id);
+                if (syncDeviceSocket)
+                {
+                    string filename = receivedPacket.getMessage();
+                    string dirName = "dir/" + username;
+                    sendFile(*syncDeviceSocket, dirName, filename, true, false);
+                }
+
+                // Tornar isso uma função, por hora replicar nos demais ifs
+                // pensando bem tem muita coisa pra refatorar nesse método.
+
+                vector<string> secundaryIps = global_settings::servers.keys();
+                for (string secundaryIp : secundaryIps)
+                {
+                    int secundarySocketId = global_settings::servers.get(secundaryIp);
+                    string filename = receivedPacket.getMessage();
+                    string dirName = "dir/" + username;
+                    string message = username + "/" + filename;
+                    sendFile(secundarySocketId, dirName, message, false, false);
+                }
+            }
+            else
+            {
+                receiveFile(receivedPacket, socket_id, nullopt, "secundario");
             }
         }
         else if (receivedPacket.isDeletePacket())
         {
-            string username = global_settings::socket_id_dictionary.get(socket_id);
-            auto syncDeviceSocket = global_settings::socket_id_dictionary.findFirstDifferentValue(username, socket_id);
-            string path = "dir/" + username + "/" + receivedPacket.getMessage();
-            remove(path.c_str());
-
-            if (syncDeviceSocket)
+            if (!secondary)
             {
-                sendPacket(*syncDeviceSocket, receivedPacket);
+                string username = global_settings::socket_id_dictionary.get(socket_id);
+                auto syncDeviceSocket = global_settings::socket_id_dictionary.findFirstDifferentValue(username, socket_id);
+                string path = "dir/" + username + "/" + receivedPacket.getMessage();
+                remove(path.c_str());
+                if (syncDeviceSocket)
+                {
+                    sendPacket(*syncDeviceSocket, receivedPacket);
+                }
+
+                vector<string> secundaryIps = global_settings::servers.keys();
+                for (string secundaryIp : secundaryIps)
+                {
+                    int secundarySocketId = global_settings::servers.get(secundaryIp);
+                    string message = "secundario/" + username + "/" + receivedPacket.getMessage();
+                    Packet packet(1, 1, MessageType::DELETE, Status::SUCCESS, message.size(), message.c_str());
+                    sendPacket(secundarySocketId, packet);
+                }
+            }
+            else
+            {
+                remove(receivedPacket.getMessage());
             }
         }
         else if (receivedPacket.isFetchPacket())
@@ -155,6 +257,69 @@ void Server::handle_client_activity(int socket_id)
             string result = listfFilesInfo(dirName);
             Packet replyPacket(1, 1, MessageType::INFO, Status::SUCCESS, result.size(), result.c_str());
             sendPacket(socket_id, replyPacket);
+        }
+        else if (receivedPacket.isConnectionServer())
+        {
+            string serverIp = receivedPacket.getMessage();
+            bool success = global_settings::connect_server(socket_id, serverIp);
+            std::string message = success ? "Conexão bem-sucedida do servidor secundário" : "Erro ao conectar.";
+            if (success)
+            {
+                Packet replyPacket(1, 1, MessageType::CONNECTION_SERVER, Status::SUCCESS, message.size(), message.c_str());
+                sendPacket(socket_id, replyPacket);
+            }
+            else
+            {
+                Packet replyPacket(1, 1, MessageType::CONNECTION_SERVER, Status::ERROR, 0, "");
+                sendPacket(socket_id, replyPacket);
+                break;
+            }
+
+            vector<string> clientUserNames = global_settings::client_name_dictionary.keys();
+            for (string clientUsername : clientUserNames)
+            {
+                sendClientInfo(socket_id, clientUsername, to_string(global_settings::client_name_dictionary.get(clientUsername)), MessageType::CLIENT);
+            }
+
+            vector<int> sockets = global_settings::socket_id_dictionary.keys();
+            for (int socket : sockets)
+            {
+                sendClientInfo(socket_id, to_string(socket), global_settings::socket_id_dictionary.get(socket), MessageType::SOCKET);
+                sendClientInfo(socket_id, to_string(socket), global_settings::client_ip.get(socket), MessageType::IP);
+            }
+        }
+        else if (receivedPacket.isClientPacket())
+        {
+            string fullMessage = receivedPacket.getMessage();
+            string username = fullMessage.substr(0, fullMessage.find(':'));
+            string qtd_str = fullMessage.substr(fullMessage.find(':') + 1, fullMessage.size());
+            // cout << "Recebido username: " << fullMessage << endl;
+            int qtd = stoi(qtd_str);
+            global_settings::client_name_dictionary.insert_or_update(username, qtd);
+            string dirName = "secundario/" + username;
+            createDir(dirName.c_str());
+        }
+        else if (receivedPacket.isSocketPacket())
+        {
+            string fullMessage = receivedPacket.getMessage();
+            string socketId = fullMessage.substr(0, fullMessage.find(':'));
+            string username = fullMessage.substr(fullMessage.find(':') + 1, fullMessage.size());
+
+            // cout << "Recebido socket: " << fullMessage << endl;
+            int socketIdInt = std::stoi(socketId);
+            global_settings::socket_id_dictionary.insert_or_update(socketIdInt, username);
+        }
+        else if (receivedPacket.isIpPacket())
+        {
+            string fullMessage = receivedPacket.getMessage();
+            string socketId = fullMessage.substr(0, fullMessage.find(':'));
+            ;
+            string ip = fullMessage.substr(fullMessage.find(':') + 1, fullMessage.size());
+
+            // cout << "Recebido Ip: " << fullMessage << endl;
+
+            int socketIdInt = std::stoi(socketId);
+            global_settings::client_ip.insert_or_update(socketIdInt, ip);
         }
     }
     close(socket_id);

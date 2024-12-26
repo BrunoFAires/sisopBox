@@ -9,7 +9,7 @@
 #include <list>
 #include <Packet.h>
 
-#define DIR_NAME "sync_dir"
+
 #define MAX_PACKET_SIZE 1024
 
 using namespace std;

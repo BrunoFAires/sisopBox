@@ -18,8 +18,13 @@ using namespace std;
 
 list<Packet> filePacking(string dir, const string fileName, bool syncFile, bool download)
 {
+    string fileName1 = fileName;
+    if (fileName.find("/") != std::string::npos)
+    {
+        fileName1 = fileName.substr(fileName.find("/") + 1, fileName.size());
+    }
 
-    ifstream file(string(dir) + "/" + fileName, std::ios::binary);
+    ifstream file(string(dir) + "/" + fileName1, std::ios::binary);
 
     if (!file.is_open())
     {

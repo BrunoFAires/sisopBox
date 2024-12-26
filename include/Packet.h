@@ -15,6 +15,11 @@ enum class MessageType
     FETCH = 6,
     DOWNLOAD = 7,
     INFO = 8,
+    CONNECTION_SERVER = 9,
+    DISCONNECTION_SERVER = 10,
+    CLIENT = 11,
+    SOCKET = 12,
+    IP = 13
 };
 
 enum class Status
@@ -58,6 +63,11 @@ public:
     bool isFetchPacket();
     bool isDownloadPacket();
     bool isInfoPacket();
+    bool isConnectionServer();
+    bool isDisconnectionServer();
+    bool isClientPacket();
+    bool isSocketPacket();
+    bool isIpPacket();
 
     size_t size() const;
     size_t headerSize() const;

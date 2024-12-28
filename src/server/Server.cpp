@@ -23,7 +23,7 @@ void createDir(const char *dirName)
         std::filesystem::create_directory(dirName);
 }
 
-Server::Server(string ip, int port)
+Server::Server(int port)
 {
     createDir(DIR_NAME);
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);

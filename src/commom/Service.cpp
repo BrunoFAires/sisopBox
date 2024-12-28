@@ -10,7 +10,7 @@ void sendPacket(int socket_id, Packet packet)
 
     while (totalBytesSent < packetSize)
     {
-        int bytesSent = send(socket_id, buffer + totalBytesSent, packetSize - totalBytesSent, 0);
+        int bytesSent = send(socket_id, buffer + totalBytesSent, packetSize - totalBytesSent, MSG_NOSIGNAL);
         if (bytesSent == -1)
         {
             throw std::runtime_error("Erro ao enviar pacote pelo socket.");

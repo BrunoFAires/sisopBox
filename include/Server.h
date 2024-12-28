@@ -25,7 +25,7 @@ private:
     void checkLastHeartbeat(int socket_id);
 
 public:
-    Server(string ip, int port);
+    Server(int port);
     ~Server();
     void start();
     void startBackup(string &serverIp, int serverPort);

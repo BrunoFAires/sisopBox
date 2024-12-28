@@ -5,27 +5,37 @@
 using namespace std;
 
 int main(int argc, char *argv[])
-{
+{   
+    char* serverType = argv[1];
 
-    if (argc < 4)
+    if (strcmp(serverType, "p") == 0)
     {
-        cerr << "Uso: " << argv[0] << " ip porta p|b porta ipServidorPrincipal" << endl;
+        if(argc < 3){
+        cerr << "Uso: " << argv[0] << "p porta" << endl;
         return 1;
-    }
+        }
 
-    string ip = argv[1];
-    int porta = stoi(argv[2]);
+        int porta = stoi(argv[2]);
+        Server server(porta);
 
-    Server server(ip, porta);
-
-    if (strcmp(argv[3], "p") == 0)
-    {
         server.start();
     }
-    else
+    else if(strcmp(serverType, "b") == 0)
     {
-        string serverIp = argv[5];
-        server.startBackup(serverIp, stoi(argv[4]));
+        if(argc < 5){
+        cerr << "Uso: " << argv[0] << "b porta portaServidorPrincipal ipServidorPrincipal" << endl;
+        return 1;
+        }
+
+        int porta = stoi(argv[2]);
+        Server server(porta);
+        
+        string principalServerIp = argv[4];
+        int principalServerPort = stoi(argv[3]);
+        server.startBackup(principalServerIp, principalServerPort);
+    }else{
+        cerr << "Uso: " << argv[0] << "p porta ou b porta portaServidorPrincipal ipServidorPrincipal" << endl;
+        return 1;
     }
 
     return 0;

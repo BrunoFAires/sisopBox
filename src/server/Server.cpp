@@ -110,6 +110,7 @@ void Server::checkLastHeartbeat(int socket_id)
             cout << "Servidor primário desconectado, iniciar eleição" << endl;
             string destino = buscarDestino(origem);
             cout << "Enviar mensagem para o vizinho: " << destino << endl;
+            startElection(destino);
             break;
         }
     }
@@ -157,6 +158,41 @@ void Server::startBackup(string &serverIp, string &principalServerIp, int princi
     {
         cout << "Erro ao conectar ao servidor principal" << endl;
     }
+}
+
+void Server::startElection(string destination)
+{
+
+    string ipVizinho = destination.substr(0, destination.find(':'));
+    string portaVizinho = destination.substr(destination.find(':') + 1, destination.size());
+    cout << ipVizinho << endl;
+    int newClientSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in newServerAddress;
+    newServerAddress.sin_family = AF_INET;
+    newServerAddress.sin_port = htons(stoi(portaVizinho));
+
+    cout << "enviado 1" << endl;
+    if (inet_pton(AF_INET, ipVizinho.c_str(), &newServerAddress.sin_addr) <= 0)
+    {
+        cerr << "Endereço IP inválido." << endl;
+        throw runtime_error("Endereço IP inválido.");
+    }
+
+    cout << "enviado2" << endl;
+    int a = connect(newClientSocket, (struct sockaddr *)&newServerAddress, sizeof(newServerAddress));
+    cout << "a: " << a << endl;
+    if (a < 0)
+    {
+        cout << "erro" << endl;
+        cerr << "Erro ao conectar ao servidor." << endl;
+        throw invalid_argument("Erro ao conectar ao servidor.");
+    }
+
+    cout << "enviado 3" << endl;
+    Packet packet(1, 1, MessageType::HEARTBEAT, Status::SUCCESS, ipVizinho.size(), ipVizinho.c_str());
+    cout << "enviado" << endl;
+    sendPacket(newClientSocket, packet);
 }
 
 void sendClientInfo(int socketId, string info1, string info2, MessageType messageType)

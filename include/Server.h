@@ -25,9 +25,9 @@ private:
     void checkLastHeartbeat(int socket_id);
 
 public:
-    Server(int port);
+    Server(string ip, int port);
     ~Server();
     void start();
-    void startBackup(string &serverIp, int serverPort);
+    void startBackup(string &serverIp, string &principalServerIp, int principalServerPort);
     void createSyncDir();
 };

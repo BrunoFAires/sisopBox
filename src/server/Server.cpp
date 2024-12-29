@@ -8,6 +8,7 @@
 
 #include <Server.h>
 #include <Service.h>
+#include <Util.h>
 #include <Packet.h>
 #include <global_settings.h>
 #include <arpa/inet.h>
@@ -23,8 +24,9 @@ void createDir(const char *dirName)
         std::filesystem::create_directory(dirName);
 }
 
-Server::Server(int port)
+Server::Server(string ip, int port)
 {
+    lerArquivo();
     createDir(DIR_NAME);
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -36,7 +38,7 @@ Server::Server(int port)
 
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port);
-    serverAddress.sin_addr.s_addr = INADDR_ANY;
+    serverAddress.sin_addr.s_addr = inet_addr(ip.c_str());
     lastHeartbeat = chrono::steady_clock::now();
 
     if (bind(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
@@ -101,24 +103,30 @@ void Server::checkLastHeartbeat(int socket_id)
     {
         if (lastHeartbeat + chrono::seconds(12) < chrono::steady_clock::now())
         {
+            string ip = inet_ntoa(serverAddress.sin_addr);
+            string porta = to_string(ntohs(serverAddress.sin_port));
+            string origem = ip + ":" + porta;
+
             cout << "Servidor primário desconectado, iniciar eleição" << endl;
+            string destino = buscarDestino(origem);
+            cout << "Enviar mensagem para o vizinho: " << destino << endl;
             break;
         }
     }
 }
 
-void Server::startBackup(string &serverIp, int serverPort)
+void Server::startBackup(string &serverIp, string &principalServerIp, int principalServerPort)
 {
 
     int newClientSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-    printf("%s, %d\n", serverIp.c_str(), serverPort);
+    printf("%s, %d\n", principalServerIp.c_str(), principalServerPort);
 
     struct sockaddr_in newServerAddress;
     newServerAddress.sin_family = AF_INET;
-    newServerAddress.sin_port = htons(serverPort);
+    newServerAddress.sin_port = htons(principalServerPort);
 
-    if (inet_pton(AF_INET, serverIp.c_str(), &newServerAddress.sin_addr) <= 0)
+    if (inet_pton(AF_INET, principalServerIp.c_str(), &newServerAddress.sin_addr) <= 0)
     {
         cerr << "Endereço IP inválido." << endl;
         throw runtime_error("Endereço IP inválido.");
@@ -165,6 +173,7 @@ void Server::heartbeatRequest()
         vector<string> secundaryIps = global_settings::servers.keys();
         for (string secundaryIp : secundaryIps)
         {
+            cout << "ip Secundario " << secundaryIp << endl;
             int secondarySocketId = global_settings::servers.get(secundaryIp);
             cout << "Heartbeat enviado " << to_string(secondarySocketId) << endl;
             Packet packet(1, 1, MessageType::HEARTBEAT, Status::SUCCESS, 0, "");
@@ -322,6 +331,7 @@ void Server::handle_client_activity(int socket_id)
         else if (receivedPacket.isConnectionServer())
         {
             string serverIp = receivedPacket.getMessage();
+            cout << "ip " << serverIp << endl;
             bool success = global_settings::connect_server(socket_id, serverIp);
             std::string message = success ? "Conexão bem-sucedida do servidor secundário" : "Erro ao conectar.";
             cout << message << endl;

@@ -5,36 +5,43 @@
 using namespace std;
 
 int main(int argc, char *argv[])
-{   
-    char* serverType = argv[1];
+{
+    char *serverType = argv[1];
 
     if (strcmp(serverType, "p") == 0)
     {
-        if(argc < 3){
-        cerr << "Uso: " << argv[0] << "p porta" << endl;
-        return 1;
+        if (argc < 3)
+        {
+            cerr << "Uso: " << argv[0] << "p ip porta" << endl;
+            return 1;
         }
 
-        int porta = stoi(argv[2]);
-        Server server(porta);
+        string ip = argv[2];
+        int porta = stoi(argv[3]);
+        Server server(ip, porta);
 
         server.start();
     }
-    else if(strcmp(serverType, "b") == 0)
+    else if (strcmp(serverType, "b") == 0)
     {
-        if(argc < 5){
-        cerr << "Uso: " << argv[0] << "b porta portaServidorPrincipal ipServidorPrincipal" << endl;
-        return 1;
+        if (argc < 5)
+        {
+            cerr << "Uso: " << argv[0] << "b ip porta ipServidorPrincipal portaServidorPrincipal" << endl;
+            return 1;
         }
 
-        int porta = stoi(argv[2]);
-        Server server(porta);
-        
+        string ip = argv[2];
+        int porta = stoi(argv[3]);
+        Server server(ip, porta);
+
         string principalServerIp = argv[4];
-        int principalServerPort = stoi(argv[3]);
-        server.startBackup(principalServerIp, principalServerPort);
-    }else{
-        cerr << "Uso: " << argv[0] << "p porta ou b porta portaServidorPrincipal ipServidorPrincipal" << endl;
+        int principalServerPort = stoi(argv[5]);
+
+        server.startBackup(ip, principalServerIp, principalServerPort);
+    }
+    else
+    {
+        cerr << "Uso: " << argv[0] << "p porta ou b porta ipServidorPrincipal portaServidorPrincipal" << endl;
         return 1;
     }
 

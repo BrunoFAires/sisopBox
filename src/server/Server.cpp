@@ -97,6 +97,16 @@ void Server::backupReceivePacket(int socket_id)
     }
 }
 
+void Server::backupProcessElectionPacket(int socket_id)
+{
+    while (true)
+    {
+        Packet receivedPacket = receivePacket(socket_id);
+
+        cout << receivedPacket.getMessage() << endl;
+    }
+}
+
 void Server::checkLastHeartbeat(int socket_id)
 {
     while (true)
@@ -151,14 +161,21 @@ void Server::startBackup(string &serverIp, string &principalServerIp, int princi
                                     { this->backupReceivePacket(newClientSocket); });
         std::thread checkHeartbeat([this, newClientSocket]()
                                    { this->checkLastHeartbeat(newClientSocket); });
-        client_activity.join();
-        checkHeartbeat.join();
+        client_activity.detach();
+        checkHeartbeat.detach();
 
         serverAddress2.sin_family = AF_INET;
-        serverAddress2.sin_port = htons(666);
+        serverAddress2.sin_port = htons(8888);
         serverAddress2.sin_addr.s_addr = serverAddress.sin_addr.s_addr;
 
         int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+        if (bind(serverSocket, (struct sockaddr *)&serverAddress2, sizeof(serverAddress2)) < 0)
+        {
+            cerr << "Erro ao vincular o socket." << endl;
+            close(serverSocket);
+            exit(EXIT_FAILURE);
+        }
 
         if (listen(serverSocket, 5) < 0)
         {
@@ -176,6 +193,7 @@ void Server::startBackup(string &serverIp, string &principalServerIp, int princi
                 continue;
             }
             cout << "Conexão aceita" << endl;
+            backupProcessElectionPacket(socket_id);
         }
     }
     else

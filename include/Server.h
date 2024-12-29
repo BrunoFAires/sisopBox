@@ -23,6 +23,7 @@ private:
     void processHeartbeat(Packet receivedPacket, int socket_id);
     void processPacket(Packet receivedPacket, int socketId);
     void backupReceivePacket(int socket_id);
+    void backupProcessElectionPacket(int socket_id);
     void checkLastHeartbeat(int socket_id);
     void startElection(string destination);
 

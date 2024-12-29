@@ -13,6 +13,7 @@ class Server
 private:
     int serverSocket;
     struct sockaddr_in serverAddress;
+    struct sockaddr_in serverAddress2;
     vector<thread> clientThreads;
     chrono::steady_clock::time_point lastHeartbeat;
 

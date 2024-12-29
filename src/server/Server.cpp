@@ -153,6 +153,30 @@ void Server::startBackup(string &serverIp, string &principalServerIp, int princi
                                    { this->checkLastHeartbeat(newClientSocket); });
         client_activity.join();
         checkHeartbeat.join();
+
+        serverAddress2.sin_family = AF_INET;
+        serverAddress2.sin_port = htons(666);
+        serverAddress2.sin_addr.s_addr = serverAddress.sin_addr.s_addr;
+
+        int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+        if (listen(serverSocket, 5) < 0)
+        {
+            cerr << "Erro ao escutar na porta." << endl;
+            exit(EXIT_FAILURE);
+        }
+        cout << "Servidor escutando na porta " << ntohs(serverAddress2.sin_port) << endl;
+
+        while (true)
+        {
+            int socket_id = accept(serverSocket, nullptr, nullptr);
+            if (socket_id < 0)
+            {
+                cerr << "Erro ao aceitar conexão." << endl;
+                continue;
+            }
+            cout << "Conexão aceita" << endl;
+        }
     }
     else
     {

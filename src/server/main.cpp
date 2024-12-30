@@ -18,9 +18,9 @@ int main(int argc, char *argv[])
 
         string ip = argv[2];
         int porta = stoi(argv[3]);
-        Server server(ip, porta);
+        Server server;
 
-        server.start();
+        server.start(ip, porta);
     }
     else if (strcmp(serverType, "b") == 0)
     {
@@ -32,12 +32,11 @@ int main(int argc, char *argv[])
 
         string ip = argv[2];
         int porta = stoi(argv[3]);
-        Server server(ip, porta);
-
+        Server server;
         string principalServerIp = argv[4];
         int principalServerPort = stoi(argv[5]);
 
-        server.startBackup(ip, principalServerIp, principalServerPort);
+        server.startBackup(ip, porta, principalServerIp, principalServerPort);
     }
     else
     {

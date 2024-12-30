@@ -20,7 +20,9 @@ enum class MessageType
     CLIENT = 11,
     SOCKET = 12,
     IP = 13,
-    HEARTBEAT = 14
+    HEARTBEAT = 14,
+    ELECTED = 15,
+    VOTE_ELECTION = 16
 };
 
 enum class Status
@@ -70,6 +72,8 @@ public:
     bool isSocketPacket();
     bool isIpPacket();
     bool isHeartbeatPacket();
+    bool isVoteElection();
+    bool isElected();
 
 
     size_t size() const;

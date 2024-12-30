@@ -24,29 +24,60 @@ void createDir(const char *dirName)
         std::filesystem::create_directory(dirName);
 }
 
-Server::Server(string ip, int port)
+int startSocket(string ip, int port)
 {
-    lerArquivo();
-    createDir(DIR_NAME);
-    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in serverAddress2;
+    serverAddress2.sin_family = AF_INET;
+    serverAddress2.sin_port = htons(port);
+    serverAddress2.sin_addr.s_addr = inet_addr(ip.c_str());
 
-    if (serverSocket < 0)
-    {
-        cerr << "Erro ao criar o socket do servidor." << endl;
-        exit(EXIT_FAILURE);
-    }
+    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(port);
-    serverAddress.sin_addr.s_addr = inet_addr(ip.c_str());
-    lastHeartbeat = chrono::steady_clock::now();
-
-    if (bind(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
+    if (bind(serverSocket, (struct sockaddr *)&serverAddress2, sizeof(serverAddress2)) < 0)
     {
         cerr << "Erro ao vincular o socket." << endl;
         close(serverSocket);
         exit(EXIT_FAILURE);
     }
+
+    if (listen(serverSocket, 5) < 0)
+    {
+        cerr << "Erro ao escutar na porta." << endl;
+        exit(EXIT_FAILURE);
+    }
+    cout << "Servidor escutando na porta " << ntohs(serverAddress2.sin_port) << endl;
+    return serverSocket;
+}
+
+int connectToSocket(string ip, int port)
+{
+
+    int newSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in newServerAddress;
+    newServerAddress.sin_family = AF_INET;
+    newServerAddress.sin_port = htons(port);
+
+    if (inet_pton(AF_INET, ip.c_str(), &newServerAddress.sin_addr) <= 0)
+    {
+        cerr << "Endereço IP inválido." << endl;
+        throw runtime_error("Endereço IP inválido.");
+    }
+    int a = connect(newSocket, (struct sockaddr *)&newServerAddress, sizeof(newServerAddress));
+    if (a < 0)
+    {
+        cerr << "Erro ao conectar ao servidor." << endl;
+        throw invalid_argument("Erro ao conectar ao servidor.");
+    }
+
+    return newSocket;
+}
+
+Server::Server()
+{
+    lerArquivo();
+    createDir(DIR_NAME);
+    lastHeartbeat = chrono::steady_clock::now();
 }
 
 Server::~Server()
@@ -62,14 +93,11 @@ Server::~Server()
     }
 }
 
-void Server::start()
+void Server::start(string ip, int port)
 {
-    if (listen(serverSocket, 5) < 0)
-    {
-        cerr << "Erro ao escutar na porta." << endl;
-        exit(EXIT_FAILURE);
-    }
-    cout << "Servidor escutando na porta " << ntohs(serverAddress.sin_port) << endl;
+    setIp(ip);
+    setPorta(port);
+    serverSocket = startSocket(ip, port);
 
     std::thread heartbeatThread(heartbeatRequest);
     heartbeatThread.detach();
@@ -89,7 +117,7 @@ void Server::start()
 
 void Server::backupReceivePacket(int socket_id)
 {
-    while (true)
+    while (!lostPrincipalServerConnection)
     {
         Packet receivedPacket = receivePacket(socket_id);
         processHeartbeat(receivedPacket, socket_id);
@@ -102,52 +130,90 @@ void Server::backupProcessElectionPacket(int socket_id)
     while (true)
     {
         Packet receivedPacket = receivePacket(socket_id);
+        string ip = getIp();
+        string porta = to_string(getPorta());
+        string origem = ip + ":" + porta;
+        string destination = buscarDestino(origem);
+        int serverId = stoi(destination.substr(destination.find('-') + 1, destination.size()));
 
-        cout << receivedPacket.getMessage() << endl;
+        if (socketVizinho == 0)
+        {
+            string ipVizinho = destination.substr(0, destination.find(':'));
+            string portaVizinho = destination.substr(destination.find(':') + 1, destination.find('-'));
+
+            socketVizinho = connectToSocket(ipVizinho, stoi(portaVizinho));
+        }
+
+        isParticipant = true;
+
+        if (receivedPacket.isElected())
+        {
+            cout << "Servidor eleito" << endl;
+        }
+        else if (receivedPacket.isVoteElection())
+        {
+            int receivedServerId = stoi(receivedPacket.getMessage());
+
+            if (serverId > receivedServerId)
+            {
+
+                if (!isParticipant)
+                {
+                    // cout << "Sou o novo lider" << endl;
+                    receivedPacket = Packet(1, 1, MessageType::VOTE_ELECTION, Status::SUCCESS, to_string(serverId).size(), to_string(serverId).c_str());
+                    sendPacket(socketVizinho, receivedPacket);
+                }
+            }
+
+            else if (serverId == receivedServerId)
+            {
+                string message = ip + ":" + porta;
+                receivedPacket = Packet(1, 1, MessageType::ELECTED, Status::SUCCESS, message.size(), message.c_str());
+                std::thread startThread([this, ip]()
+                                        { this->start(ip, 8081); });
+                startThread.detach();
+                sendPacket(socketVizinho, receivedPacket);
+                // cout << "Fui eleito" << endl;
+                isParticipant = false;
+            }
+        }
     }
 }
 
 void Server::checkLastHeartbeat(int socket_id)
 {
-    while (true)
+    while (!lostPrincipalServerConnection)
     {
         if (lastHeartbeat + chrono::seconds(12) < chrono::steady_clock::now())
         {
-            string ip = inet_ntoa(serverAddress.sin_addr);
-            string porta = to_string(ntohs(serverAddress.sin_port));
+            string ip = getIp();
+            string porta = to_string(getPorta());
             string origem = ip + ":" + porta;
-
-            cout << "Servidor primário desconectado, iniciar eleição" << endl;
-            string destino = buscarDestino(origem);
-            cout << "Enviar mensagem para o vizinho: " << destino << endl;
-            startElection(destino);
+            cout << "Servidor primário desconectado" << endl;
+            if (totalBackupServers == 1)
+            {
+                cout << "Único servidor secundário, fui eleito" << endl;
+            }
+            else
+            {
+                cout << "Iniciando eleição" << endl;
+                string destino = buscarDestino(origem);
+                lostPrincipalServerConnection = true;
+                startElection(destino);
+            }
             break;
         }
     }
 }
 
-void Server::startBackup(string &serverIp, string &principalServerIp, int principalServerPort)
+void Server::startBackup(string &serverIp, int serverPort, string &principalServerIp, int principalServerPort)
 {
-
-    int newClientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    setIp(serverIp);
+    setPorta(serverPort);
 
     printf("%s, %d\n", principalServerIp.c_str(), principalServerPort);
 
-    struct sockaddr_in newServerAddress;
-    newServerAddress.sin_family = AF_INET;
-    newServerAddress.sin_port = htons(principalServerPort);
-
-    if (inet_pton(AF_INET, principalServerIp.c_str(), &newServerAddress.sin_addr) <= 0)
-    {
-        cerr << "Endereço IP inválido." << endl;
-        throw runtime_error("Endereço IP inválido.");
-    }
-
-    if (connect(newClientSocket, (struct sockaddr *)&newServerAddress, sizeof(newServerAddress)) < 0)
-    {
-        cerr << "Erro ao conectar ao servidor." << endl;
-        throw invalid_argument("Erro ao conectar ao servidor.");
-    }
+    int newClientSocket = connectToSocket(principalServerIp, principalServerPort);
 
     Packet packet(1, 1, MessageType::CONNECTION_SERVER, Status::SUCCESS, serverIp.size(), serverIp.c_str());
     sendPacket(newClientSocket, packet);
@@ -164,26 +230,8 @@ void Server::startBackup(string &serverIp, string &principalServerIp, int princi
         client_activity.detach();
         checkHeartbeat.detach();
 
-        serverAddress2.sin_family = AF_INET;
-        serverAddress2.sin_port = htons(8888);
-        serverAddress2.sin_addr.s_addr = serverAddress.sin_addr.s_addr;
-
-        int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-
-        if (bind(serverSocket, (struct sockaddr *)&serverAddress2, sizeof(serverAddress2)) < 0)
-        {
-            cerr << "Erro ao vincular o socket." << endl;
-            close(serverSocket);
-            exit(EXIT_FAILURE);
-        }
-
-        if (listen(serverSocket, 5) < 0)
-        {
-            cerr << "Erro ao escutar na porta." << endl;
-            exit(EXIT_FAILURE);
-        }
-        cout << "Servidor escutando na porta " << ntohs(serverAddress2.sin_port) << endl;
-
+        string ip = getIp();
+        serverSocket = startSocket(ip, 8888);
         while (true)
         {
             int socket_id = accept(serverSocket, nullptr, nullptr);
@@ -206,35 +254,12 @@ void Server::startElection(string destination)
 {
 
     string ipVizinho = destination.substr(0, destination.find(':'));
-    string portaVizinho = destination.substr(destination.find(':') + 1, destination.size());
-    cout << ipVizinho << endl;
-    int newClientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    string portaVizinho = destination.substr(destination.find(':') + 1, destination.find('-'));
+    string serverId = destination.substr(destination.find('-') + 1, destination.size());
 
-    struct sockaddr_in newServerAddress;
-    newServerAddress.sin_family = AF_INET;
-    newServerAddress.sin_port = htons(stoi(portaVizinho));
-
-    cout << "enviado 1" << endl;
-    if (inet_pton(AF_INET, ipVizinho.c_str(), &newServerAddress.sin_addr) <= 0)
-    {
-        cerr << "Endereço IP inválido." << endl;
-        throw runtime_error("Endereço IP inválido.");
-    }
-
-    cout << "enviado2" << endl;
-    int a = connect(newClientSocket, (struct sockaddr *)&newServerAddress, sizeof(newServerAddress));
-    cout << "a: " << a << endl;
-    if (a < 0)
-    {
-        cout << "erro" << endl;
-        cerr << "Erro ao conectar ao servidor." << endl;
-        throw invalid_argument("Erro ao conectar ao servidor.");
-    }
-
-    cout << "enviado 3" << endl;
-    Packet packet(1, 1, MessageType::HEARTBEAT, Status::SUCCESS, ipVizinho.size(), ipVizinho.c_str());
-    cout << "enviado" << endl;
-    sendPacket(newClientSocket, packet);
+    socketVizinho = connectToSocket(ipVizinho, stoi(portaVizinho));
+    Packet packet(1, 1, MessageType::VOTE_ELECTION, Status::SUCCESS, serverId.size(), serverId.c_str());
+    sendPacket(socketVizinho, packet);
 }
 
 void sendClientInfo(int socketId, string info1, string info2, MessageType messageType)
@@ -251,9 +276,8 @@ void Server::heartbeatRequest()
         vector<string> secundaryIps = global_settings::servers.keys();
         for (string secundaryIp : secundaryIps)
         {
-            cout << "ip Secundario " << secundaryIp << endl;
             int secondarySocketId = global_settings::servers.get(secundaryIp);
-            cout << "Heartbeat enviado " << to_string(secondarySocketId) << endl;
+            // cout << "Heartbeat enviado " << to_string(secondarySocketId) << endl;
             Packet packet(1, 1, MessageType::HEARTBEAT, Status::SUCCESS, 0, "");
             try
             {
@@ -262,7 +286,7 @@ void Server::heartbeatRequest()
             catch (const std::exception &e)
             {
                 global_settings::servers.remove(secundaryIp);
-                cout << "Servidor secundário desconectado" << endl;
+                // cout << "Servidor secundário desconectado" << endl;
             }
         }
         this_thread::sleep_for(chrono::seconds(5));
@@ -276,17 +300,31 @@ void Server::processHeartbeat(Packet receivedPacket, int socket_id)
         lastHeartbeat = chrono::steady_clock::now();
         cout << "Heartbeat recebido " << to_string(socket_id) << endl;
     }
-    else
-    {
-        cout << "Outro pacote " << endl;
-    }
 }
 
 void Server::processPacket(Packet receivedPacket, int socket_id)
 {
     if (receivedPacket.isDataPacket())
     {
-        receiveFile(receivedPacket, socket_id, nullopt, "secundario");
+        string username = global_settings::socket_id_dictionary.get(socket_id);
+        receiveFile(receivedPacket, socket_id, username, "secundario");
+    }
+    else if (receivedPacket.isClientPacket())
+    {
+        string fullMesage = receivedPacket.getMessage();
+        string username = fullMesage.substr(0, fullMesage.find(':'));
+        string socketId = fullMesage.substr(fullMesage.find(':') + 1, fullMesage.size());
+        string userDirFolderName = "secundario/" + username;
+        global_settings::client_name_dictionary.insert_or_update(username, stoi(socketId));
+        global_settings::socket_id_dictionary.insert_or_update(stoi(socketId), username);
+        createDir(userDirFolderName.c_str());
+    }
+    else if (receivedPacket.isIpPacket())
+    {
+        string fullMesage = receivedPacket.getMessage();
+        string socketId = fullMesage.substr(0, fullMesage.find(':'));
+        string ip = fullMesage.substr(fullMesage.find(':') + 1, fullMesage.size());
+        global_settings::client_ip.insert_or_update(stoi(socketId), ip);
     }
     else if (receivedPacket.isDeletePacket())
     {
@@ -318,9 +356,13 @@ void Server::handle_client_activity(int socket_id)
                 createDir(userDirFolderName.c_str());
                 sendPacket(socket_id, replyPacket);
 
-                sendClientInfo(socket_id, username, to_string(socket_id), MessageType::CLIENT);
-                sendClientInfo(socket_id, to_string(socket_id), username, MessageType::SOCKET);
-                sendClientInfo(socket_id, to_string(socket_id), clientIp, MessageType::IP);
+                vector<string> secundaryIps = global_settings::servers.keys();
+                for (string secundaryIp : secundaryIps)
+                {
+                    int secondarySocketId = global_settings::servers.get(secundaryIp);
+                    sendClientInfo(secondarySocketId, username, to_string(socket_id), MessageType::CLIENT);
+                    sendClientInfo(secondarySocketId, to_string(socket_id), clientIp, MessageType::IP);
+                }
             }
             else
             {
@@ -362,7 +404,7 @@ void Server::handle_client_activity(int socket_id)
                 string filename = receivedPacket.getMessage();
                 string dirName = "dir/" + username;
                 string message = username + "/" + filename;
-                // sendFile(secundarySocketId, dirName, message, false, false);
+                sendFile(secundarySocketId, dirName, message, false, false);
             }
         }
         else if (receivedPacket.isDeletePacket())
@@ -409,10 +451,10 @@ void Server::handle_client_activity(int socket_id)
         else if (receivedPacket.isConnectionServer())
         {
             string serverIp = receivedPacket.getMessage();
-            cout << "ip " << serverIp << endl;
+            // cout << "ip " << serverIp << endl;
             bool success = global_settings::connect_server(socket_id, serverIp);
             std::string message = success ? "Conexão bem-sucedida do servidor secundário" : "Erro ao conectar.";
-            cout << message << endl;
+
             if (success)
             {
                 Packet replyPacket(1, 1, MessageType::CONNECTION_SERVER, Status::SUCCESS, message.size(), message.c_str());
@@ -459,18 +501,26 @@ void Server::handle_client_activity(int socket_id)
             int socketIdInt = std::stoi(socketId);
             global_settings::socket_id_dictionary.insert_or_update(socketIdInt, username);
         }
-        else if (receivedPacket.isIpPacket())
-        {
-            string fullMessage = receivedPacket.getMessage();
-            string socketId = fullMessage.substr(0, fullMessage.find(':'));
-            ;
-            string ip = fullMessage.substr(fullMessage.find(':') + 1, fullMessage.size());
-
-            // cout << "Recebido Ip: " << fullMessage << endl;
-
-            int socketIdInt = std::stoi(socketId);
-            global_settings::client_ip.insert_or_update(socketIdInt, ip);
-        }
     }
     close(socket_id);
+}
+
+void Server::setIp(string ip)
+{
+    this->ip = ip;
+}
+
+void Server::setPorta(int porta)
+{
+    this->porta = porta;
+}
+
+string Server::getIp()
+{
+    return this->ip;
+}
+
+int Server::getPorta()
+{
+    return this->porta;
 }

@@ -98,6 +98,16 @@ bool Packet::isHeartbeatPacket()
     return messageType == MessageType::HEARTBEAT;
 }
 
+bool Packet::isElected()
+{
+    return messageType == MessageType::ELECTED;
+}
+
+bool Packet::isVoteElection()
+{
+    return messageType == MessageType::VOTE_ELECTION;
+}
+
 void Packet::setStatus(Status status)
 {
     this->status = status;

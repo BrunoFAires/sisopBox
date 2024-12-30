@@ -12,8 +12,13 @@ class Server
 {
 private:
     int serverSocket;
-    struct sockaddr_in serverAddress;
-    struct sockaddr_in serverAddress2;
+    int socketVizinho;
+    bool isParticipant;
+    bool lostPrincipalServerConnection;
+    string ip;
+    int porta;
+    int totalBackupServers = 2;
+
     vector<thread> clientThreads;
     chrono::steady_clock::time_point lastHeartbeat;
 
@@ -28,9 +33,13 @@ private:
     void startElection(string destination);
 
 public:
-    Server(string ip, int port);
+    Server();
     ~Server();
-    void start();
-    void startBackup(string &serverIp, string &principalServerIp, int principalServerPort);
+    void start(string ip, int port);
+    void startBackup(string &serverIp, int serverPort, string &principalServerIp, int principalServerPort);
     void createSyncDir();
+    void setIp(string ip);
+    void setPorta(int porta);
+    string getIp();
+    int getPorta();
 };

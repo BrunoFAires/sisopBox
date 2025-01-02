@@ -11,13 +11,15 @@ using namespace std;
 class Server
 {
 private:
-    int serverSocket;
-    int socketVizinho;
+    int serverSocket = 0;
+    int socketVizinho = 0;
     bool isParticipant;
-    bool lostPrincipalServerConnection;
+    bool lostPrincipalServerConnection = false;
+    bool hasNewServer = false;
     string ip;
     int porta;
     int totalBackupServers = 2;
+    int electionSocket = 0;
 
     vector<thread> clientThreads;
     chrono::steady_clock::time_point lastHeartbeat;

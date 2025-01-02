@@ -1,5 +1,8 @@
 
 #include <Service.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 void sendPacket(int socket_id, Packet packet)
 {
@@ -194,4 +197,53 @@ string listfFilesInfo(string dir)
     }
 
     return result.str();
+}
+
+int startSocket(string ip, int port)
+{
+    struct sockaddr_in serverAddress2;
+    serverAddress2.sin_family = AF_INET;
+    serverAddress2.sin_port = htons(port);
+    serverAddress2.sin_addr.s_addr = inet_addr(ip.c_str());
+
+    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (bind(serverSocket, (struct sockaddr *)&serverAddress2, sizeof(serverAddress2)) < 0)
+    {
+        cerr << "Erro ao vincular o socket." << endl;
+        close(serverSocket);
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(serverSocket, 5) < 0)
+    {
+        cerr << "Erro ao escutar na porta." << endl;
+        exit(EXIT_FAILURE);
+    }
+    cout << "Servidor escutando na porta " << ntohs(serverAddress2.sin_port) << endl;
+    return serverSocket;
+}
+
+int connectToSocket(string ip, int port)
+{
+
+    int newSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in newServerAddress;
+    newServerAddress.sin_family = AF_INET;
+    newServerAddress.sin_port = htons(port);
+
+    if (inet_pton(AF_INET, ip.c_str(), &newServerAddress.sin_addr) <= 0)
+    {
+        cerr << "Endereço IP inválido." << endl;
+        throw runtime_error("Endereço IP inválido.");
+    }
+    int a = connect(newSocket, (struct sockaddr *)&newServerAddress, sizeof(newServerAddress));
+    if (a < 0)
+    {
+        cerr << "Erro ao conectar ao servidor." << endl;
+        throw invalid_argument("Erro ao conectar ao servidor.");
+    }
+
+    return newSocket;
 }

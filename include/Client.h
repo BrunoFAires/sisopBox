@@ -10,10 +10,10 @@ class Client
 {
 private:
     string username;
+    string ip;
     int clientSocket;
-    struct sockaddr_in serverAddress;
     std::atomic<bool> stopRequested{false};
-    Client connectToServer(const string &username, const string &serverIP, int serverPort);
+    Client connectToServer(const string &username, const string &clientIp, const string &serverIP, int serverPort);
     void createSyncDir();
     void createClientDownloadDir();
     void processCommand(const string commandLine);
@@ -21,15 +21,16 @@ private:
 
 public:
     Client();
-    Client(string username, int clientSocket, sockaddr_in serverAddress);
+    Client(string username, string clientIp, int clientSocket);
     ~Client();
     void setUsername(const std::string &user);
     string getUsername();
     int getSocketId();
     void sendMessage();
-    Client run(const string &username, const string &serverIP, int serverPort);
+    Client run(const string &username, const string &clientIp, const string &serverIP, int serverPort);
     void sync();
     void cli();
+    void startDeamon();
 };
 
 #endif

@@ -8,7 +8,7 @@ class global_settings
 public:
     static concurrent_dictionary<string, int> client_name_dictionary;
     static concurrent_dictionary<int, string> socket_id_dictionary;
-    static concurrent_dictionary<int, string> client_ip;
+    static concurrent_dictionary<string, string> client_ip;
 
     static concurrent_dictionary<string, int> servers;
 

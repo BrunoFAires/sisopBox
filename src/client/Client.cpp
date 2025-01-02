@@ -25,42 +25,18 @@ Client::Client() : clientSocket(-1)
     }
 }
 
-Client::Client(string username, int clientSocket, sockaddr_in serverAddress) : username(username), clientSocket(clientSocket), serverAddress(serverAddress) {};
+Client::Client(string username, string clientIp, int clientSocket) : username(username), ip(clientIp), clientSocket(clientSocket) {};
 
 Client::~Client()
 {
     close(clientSocket);
 }
 
-Client Client::connectToServer(const string &username, const string &serverIP, int serverPort)
+Client Client::connectToServer(const string &username, const string &clientIp, const string &serverIP, int serverPort)
 {
-    int newClientSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (newClientSocket < 0)
-    {
-        cerr << "Erro ao criar o socket." << endl;
-        exit(EXIT_FAILURE);
-    }
+    int newClientSocket = connectToSocket(serverIP, serverPort);
 
-    struct sockaddr_in newServerAddress;
-    newServerAddress.sin_family = AF_INET;
-    newServerAddress.sin_port = htons(serverPort);
-    newServerAddress.sin_addr.s_addr = INADDR_ANY;
-
-    if (inet_pton(AF_INET, serverIP.c_str(), &newServerAddress.sin_addr) <= 0)
-    {
-        cerr << "Endereço IP inválido." << endl;
-        throw runtime_error("Endereço IP inválido.");
-    }
-
-    if (connect(newClientSocket, (struct sockaddr *)&newServerAddress, sizeof(newServerAddress)) < 0)
-    {
-        cerr << "Erro ao conectar ao servidor." << endl;
-        throw invalid_argument("Erro ao conectar ao servidor.");
-    }
-
-    string clientIP = inet_ntoa(newServerAddress.sin_addr);
-    string message = username + ":" + clientIP;
-
+    string message = username + ":" + clientIp;
 
     Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.size(), message.c_str());
     sendPacket(newClientSocket, packet);
@@ -73,7 +49,7 @@ Client Client::connectToServer(const string &username, const string &serverIP, i
 
     cout << "Conectado ao servidor!" << endl;
 
-    return Client(username, newClientSocket, newServerAddress);
+    return Client(username, clientIp, newClientSocket);
 }
 
 void Client::createSyncDir()
@@ -95,11 +71,16 @@ void Client::sendMessage()
     }
 }
 
-Client Client::run(const string &username, const string &serverIP, int serverPort)
+Client Client::run(const string &username, const string &clientIp, const string &serverIP, int serverPort)
 {
     createSyncDir();
     createClientDownloadDir();
-    return connectToServer(username, serverIP, serverPort);
+    return connectToServer(username, clientIp, serverIP, serverPort);
+}
+
+void Client::startDeamon()
+{
+    // int deamonSocket = startSocket(ip, 666);
 }
 
 string Client::getUsername()

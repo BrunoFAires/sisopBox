@@ -24,54 +24,6 @@ void createDir(const char *dirName)
         std::filesystem::create_directory(dirName);
 }
 
-int startSocket(string ip, int port)
-{
-    struct sockaddr_in serverAddress2;
-    serverAddress2.sin_family = AF_INET;
-    serverAddress2.sin_port = htons(port);
-    serverAddress2.sin_addr.s_addr = inet_addr(ip.c_str());
-
-    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (bind(serverSocket, (struct sockaddr *)&serverAddress2, sizeof(serverAddress2)) < 0)
-    {
-        cerr << "Erro ao vincular o socket." << endl;
-        close(serverSocket);
-        exit(EXIT_FAILURE);
-    }
-
-    if (listen(serverSocket, 5) < 0)
-    {
-        cerr << "Erro ao escutar na porta." << endl;
-        exit(EXIT_FAILURE);
-    }
-    cout << "Servidor escutando na porta " << ntohs(serverAddress2.sin_port) << endl;
-    return serverSocket;
-}
-
-int connectToSocket(string ip, int port)
-{
-
-    int newSocket = socket(AF_INET, SOCK_STREAM, 0);
-
-    struct sockaddr_in newServerAddress;
-    newServerAddress.sin_family = AF_INET;
-    newServerAddress.sin_port = htons(port);
-
-    if (inet_pton(AF_INET, ip.c_str(), &newServerAddress.sin_addr) <= 0)
-    {
-        cerr << "Endereço IP inválido." << endl;
-        throw runtime_error("Endereço IP inválido.");
-    }
-    int a = connect(newSocket, (struct sockaddr *)&newServerAddress, sizeof(newServerAddress));
-    if (a < 0)
-    {
-        cerr << "Erro ao conectar ao servidor." << endl;
-        throw invalid_argument("Erro ao conectar ao servidor.");
-    }
-
-    return newSocket;
-}
 
 Server::Server()
 {
@@ -134,7 +86,6 @@ void Server::backupProcessElectionPacket(int socket_id)
         string porta = to_string(getPorta());
         string origem = ip + ":" + porta;
         string destination = buscarDestino(origem);
-        cout << "stoi 1" << endl;
         int serverId = stoi(destination.substr(destination.find('-') + 1, destination.size()));
 
         if (socketVizinho == 0)
@@ -159,7 +110,6 @@ void Server::backupProcessElectionPacket(int socket_id)
         }
         else if (receivedPacket.isVoteElection())
         {
-            cout << "stoi 2" << endl;
             int receivedServerId = stoi(receivedPacket.getMessage());
 
             if (serverId > receivedServerId)
@@ -214,6 +164,10 @@ void Server::checkLastHeartbeat(int socket_id)
             else
             {
                 cout << "Iniciando eleição" << endl;
+                vector<string> ips = global_settings::client_ip.keys();
+                for (string ip : ips){
+                    cout << "notificar cliente em: " << global_settings::client_ip.get(ip) << endl; 
+                }
                 string destino = buscarDestino(origem);
                 lostPrincipalServerConnection = true;
                 startElection(destino);
@@ -239,7 +193,7 @@ void Server::startBackup(string &serverIp, int serverPort, string &principalServ
 
     if (!receivedPacket.isStatusError())
     {
-        createDir("secundario");
+        createDir(DIR_NAME);
 
         if (hasNewServer)
         {
@@ -284,7 +238,6 @@ void Server::startElection(string destination)
     string portaVizinho = destination.substr(destination.find(':') + 1, destination.find('-'));
     string serverId = destination.substr(destination.find('-') + 1, destination.size());
 
-    cout << "stoi 3" << endl;
     socketVizinho = connectToSocket(ipVizinho, stoi(portaVizinho));
     Packet packet(1, 1, MessageType::VOTE_ELECTION, Status::SUCCESS, serverId.size(), serverId.c_str());
     sendPacket(socketVizinho, packet);
@@ -336,17 +289,15 @@ void Server::processPacket(Packet receivedPacket, int socket_id)
     if (receivedPacket.isDataPacket())
     {
         string username = global_settings::socket_id_dictionary.get(socket_id);
-        receiveFile(receivedPacket, socket_id, username, "secundario");
+        receiveFile(receivedPacket, socket_id, username, DIR_NAME);
     }
     else if (receivedPacket.isClientPacket())
     {
         string fullMesage = receivedPacket.getMessage();
         string username = fullMesage.substr(0, fullMesage.find(':'));
         string socketId = fullMesage.substr(fullMesage.find(':') + 1, fullMesage.size());
-        string userDirFolderName = "secundario/" + username;
-        cout << "stoi 4" << endl;
+        string userDirFolderName = "dir/" + username;
         global_settings::client_name_dictionary.insert_or_update(username, stoi(socketId));
-        cout << "stoi 5" << endl;
         global_settings::socket_id_dictionary.insert_or_update(stoi(socketId), username);
         createDir(userDirFolderName.c_str());
     }
@@ -355,8 +306,8 @@ void Server::processPacket(Packet receivedPacket, int socket_id)
         string fullMesage = receivedPacket.getMessage();
         string socketId = fullMesage.substr(0, fullMesage.find(':'));
         string ip = fullMesage.substr(fullMesage.find(':') + 1, fullMesage.size());
-        cout << "stoi 16" << endl;
-        global_settings::client_ip.insert_or_update(stoi(socketId), ip);
+        cout << "ip " << ip << endl;
+        global_settings::client_ip.insert_or_update(ip, ip);
     }
     else if (receivedPacket.isDeletePacket())
     {
@@ -393,7 +344,7 @@ void Server::handle_client_activity(int socket_id)
                 {
                     int secondarySocketId = global_settings::servers.get(secundaryIp);
                     sendClientInfo(secondarySocketId, username, to_string(socket_id), MessageType::CLIENT);
-                    sendClientInfo(secondarySocketId, to_string(socket_id), clientIp, MessageType::IP);
+                    sendClientInfo(secondarySocketId, clientIp, clientIp, MessageType::IP);
                 }
             }
             else
@@ -455,7 +406,7 @@ void Server::handle_client_activity(int socket_id)
             for (string secundaryIp : secundaryIps)
             {
                 int secundarySocketId = global_settings::servers.get(secundaryIp);
-                string message = "secundario/" + username + "/" + receivedPacket.getMessage();
+                string message = "dir/" + username + "/" + receivedPacket.getMessage();
                 Packet packet(1, 1, MessageType::DELETE, Status::SUCCESS, message.size(), message.c_str());
                 sendPacket(secundarySocketId, packet);
             }
@@ -509,7 +460,11 @@ void Server::handle_client_activity(int socket_id)
             for (int socket : sockets)
             {
                 sendClientInfo(socket_id, to_string(socket), global_settings::socket_id_dictionary.get(socket), MessageType::SOCKET);
-                sendClientInfo(socket_id, to_string(socket), global_settings::client_ip.get(socket), MessageType::IP);
+            }
+            vector<string> ips = global_settings::client_ip.keys();
+            for (string ip : ips)
+            {
+                 sendClientInfo(socket_id, ip, ip, MessageType::IP);
             }
         }
         else if (receivedPacket.isClientPacket())
@@ -518,10 +473,9 @@ void Server::handle_client_activity(int socket_id)
             string username = fullMessage.substr(0, fullMessage.find(':'));
             string qtd_str = fullMessage.substr(fullMessage.find(':') + 1, fullMessage.size());
             // cout << "Recebido username: " << fullMessage << endl;
-            cout << "stoi 17" << endl;
             int qtd = stoi(qtd_str);
             global_settings::client_name_dictionary.insert_or_update(username, qtd);
-            string dirName = "secundario/" + username;
+            string dirName = "dir/" + username;
             createDir(dirName.c_str());
         }
         else if (receivedPacket.isSocketPacket())
@@ -529,9 +483,7 @@ void Server::handle_client_activity(int socket_id)
             string fullMessage = receivedPacket.getMessage();
             string socketId = fullMessage.substr(0, fullMessage.find(':'));
             string username = fullMessage.substr(fullMessage.find(':') + 1, fullMessage.size());
-
             // cout << "Recebido socket: " << fullMessage << endl;
-            cout << "stoi 18" << endl;
             int socketIdInt = std::stoi(socketId);
             global_settings::socket_id_dictionary.insert_or_update(socketIdInt, username);
         }

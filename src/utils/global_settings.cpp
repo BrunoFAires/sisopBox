@@ -7,7 +7,7 @@
 using namespace std;
 
 concurrent_dictionary<string, int> global_settings::client_name_dictionary;
-concurrent_dictionary<int, string> global_settings::client_ip;
+concurrent_dictionary<string, string> global_settings::client_ip;
 concurrent_dictionary<int, string> global_settings::socket_id_dictionary;
 concurrent_dictionary<string, int> global_settings::servers;
 
@@ -46,7 +46,7 @@ bool global_settings::connect_client(int socket_id, string client_name, string c
     {
         client_name_dictionary.insert_or_update(client_name, socket_ids);
         socket_id_dictionary.insert_or_update(socket_id, client_name);
-        client_ip.insert_or_update(socket_id, clientIp);
+        client_ip.insert_or_update(clientIp, clientIp);
     }
 
     cout << terminal_output.str() << endl;
@@ -92,7 +92,6 @@ bool global_settings::disconnect_client(int socket_id, string client_name)
         }
 
         socket_id_dictionary.remove(socket_id);
-        client_ip.remove(socket_id);
 
         success = true;
         terminal_output << "Disconnect: connected client; Client: " << client_name << " socketId: " << socket_ids;

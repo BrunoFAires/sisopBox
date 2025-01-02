@@ -28,5 +28,7 @@ void getSyncDir(int socket_id, string username);
 void syncFiles(int socket_id, string dir, string username);
 void sendClients(int socket_id, string clientSocket, string username);
 string listfFilesInfo(string dir);
+int startSocket(string ip, int port);
+int connectToSocket(string ip, int port);
 
 #endif

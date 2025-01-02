@@ -8,19 +8,20 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    if (argc != 4)
+    if (argc != 5)
     {
-        cerr << "Uso: " << argv[0] << " usuario ip porta" << endl;
+        cerr << "Uso: " << argv[0] << " usuario ip ipServidor portaServidor" << endl;
         return 1;
     }
 
     string username = argv[1];
-    string serverIP = argv[2];
-    int serverPort = stoi(argv[3]);
+    string clientIp = argv[2];
+    string serverIP = argv[3];
+    int serverPort = stoi(argv[4]);
 
     try
     {
-        Client client = client.run(username, serverIP, serverPort);
+        Client client = client.run(username, clientIp, serverIP, serverPort);
         Notify notify(&client);
 
 

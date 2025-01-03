@@ -10,6 +10,7 @@
 #include <Client.h>
 #include <Packet.h>
 #include <Service.h>
+#include <thread>
 
 #define DIR_NAME "sync_dir"
 
@@ -25,18 +26,27 @@ Client::Client() : clientSocket(-1)
     }
 }
 
-Client::Client(string username, string clientIp, int clientSocket) : username(username), ip(clientIp), clientSocket(clientSocket) {};
+Client::Client(string username, string clientIp, string serverIp, int serverPort)
+{
+    this->username = username;
+    this->ip = clientIp;
+    this->serverIP = serverIp;
+    this->serverPort = serverPort;
+}
 
 Client::~Client()
 {
     close(clientSocket);
 }
 
-Client Client::connectToServer(const string &username, const string &clientIp, const string &serverIP, int serverPort)
+void Client::connectToServer()
 {
+    cout << "serverIP: " << serverIP << " server port " << serverPort << endl;
+    
     int newClientSocket = connectToSocket(serverIP, serverPort);
 
-    string message = username + ":" + clientIp;
+
+    string message = username + ":" + ip;
 
     Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.size(), message.c_str());
     sendPacket(newClientSocket, packet);
@@ -47,9 +57,14 @@ Client Client::connectToServer(const string &username, const string &clientIp, c
         throw invalid_argument("Erro ao conectar ao servidor.");
     }
 
-    cout << "Conectado ao servidor!" << endl;
-
-    return Client(username, clientIp, newClientSocket);
+    cout << "Conectado ao servidor!" << newClientSocket << endl;
+    clientSocket = newClientSocket;
+    if (deamonSocket == 0)
+    {
+        thread watcherThread4([this]()
+                              { startDeamon(); });
+        watcherThread4.detach();
+    }
 }
 
 void Client::createSyncDir()
@@ -71,16 +86,40 @@ void Client::sendMessage()
     }
 }
 
-Client Client::run(const string &username, const string &clientIp, const string &serverIP, int serverPort)
+void Client::run()
 {
     createSyncDir();
     createClientDownloadDir();
-    return connectToServer(username, clientIp, serverIP, serverPort);
+    connectToServer();
 }
 
 void Client::startDeamon()
 {
-    // int deamonSocket = startSocket(ip, 666);
+    cout << ip << endl;
+    deamonSocket = startSocket(ip, 9090);
+    while (true)
+    {
+        int socket_id = accept(deamonSocket, nullptr, nullptr);
+        if (socket_id < 0)
+        {
+            cerr << "Erro ao aceitar conexão." << endl;
+            continue;
+        }
+
+        Packet receivedPacket = receivePacket(socket_id);
+        string fullMessage = receivedPacket.getMessage();
+        string newServerIp = fullMessage.substr(0, fullMessage.find(':'));
+        string newServerPort = fullMessage.substr(fullMessage.find(':') + 1, fullMessage.size());
+
+        this->serverIP = newServerIp;
+        this->serverPort = stoi(newServerPort);
+
+        cout << "Conexão aceita" << endl;
+
+        close(socket_id);
+
+        connectToServer();
+    }
 }
 
 string Client::getUsername()

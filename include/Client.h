@@ -11,9 +11,12 @@ class Client
 private:
     string username;
     string ip;
-    int clientSocket;
+    string serverIP;
+    int serverPort;
+    int clientSocket = 0;
+    int deamonSocket = 0;
     std::atomic<bool> stopRequested{false};
-    Client connectToServer(const string &username, const string &clientIp, const string &serverIP, int serverPort);
+    void connectToServer();
     void createSyncDir();
     void createClientDownloadDir();
     void processCommand(const string commandLine);
@@ -21,13 +24,13 @@ private:
 
 public:
     Client();
-    Client(string username, string clientIp, int clientSocket);
+    Client(string username, string clientIp, string serverIp, int serverPort);
     ~Client();
     void setUsername(const std::string &user);
     string getUsername();
     int getSocketId();
     void sendMessage();
-    Client run(const string &username, const string &clientIp, const string &serverIP, int serverPort);
+    void run();
     void sync();
     void cli();
     void startDeamon();

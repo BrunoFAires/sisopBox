@@ -24,7 +24,6 @@ void createDir(const char *dirName)
         std::filesystem::create_directory(dirName);
 }
 
-
 Server::Server()
 {
     lerArquivo();
@@ -105,7 +104,6 @@ void Server::backupProcessElectionPacket(int socket_id)
             lostPrincipalServerConnection = false;
             hasNewServer = true;
             cout << "Servidor primário reconectado" << endl;
-            totalBackupServers -= 1;
             startBackup(ip, getPorta(), destinationIp, 8085); // Mudar para 8080 no lab
         }
         else if (receivedPacket.isVoteElection())
@@ -114,10 +112,8 @@ void Server::backupProcessElectionPacket(int socket_id)
 
             if (serverId > receivedServerId)
             {
-
                 if (!isParticipant)
                 {
-                    cout << "Sou o novo lider" << endl;
                     receivedPacket = Packet(1, 1, MessageType::VOTE_ELECTION, Status::SUCCESS, to_string(serverId).size(), to_string(serverId).c_str());
                     sendPacket(socketVizinho, receivedPacket);
                     isParticipant = true;
@@ -136,6 +132,16 @@ void Server::backupProcessElectionPacket(int socket_id)
                 cout << "Fui eleito" << endl;
                 totalBackupServers -= 1;
                 isParticipant = false;
+                sleep(1);
+                vector<string> ips = global_settings::client_ip.keys();
+                for (string ip : ips)
+                {
+                    int socket = connectToSocket(ip, 9090);
+                    cout << "socketCliente " << socket << endl;
+                    string message = ip + ":8085";
+                    Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.size(), message.c_str());
+                    sendPacket(socket, packet);
+                }
             }
             else if (serverId < receivedServerId)
             {
@@ -151,23 +157,31 @@ void Server::checkLastHeartbeat(int socket_id)
     lastHeartbeat = chrono::steady_clock::now();
     while (!lostPrincipalServerConnection)
     {
-        if (lastHeartbeat + chrono::seconds(20) < chrono::steady_clock::now())
+        if (lastHeartbeat + chrono::seconds(15) < chrono::steady_clock::now())
         {
             string ip = getIp();
             string porta = to_string(getPorta());
             string origem = ip + ":" + porta;
             cout << "Servidor primário desconectado" << endl;
-            if (totalBackupServers == 1)
+            if (totalBackupServers == 0)
             {
                 cout << "Único servidor secundário, fui eleito" << endl;
+                std::thread startThread([this, ip]()
+                                        { this->start(ip, 8085); });
+                startThread.detach();
+                vector<string> ips = global_settings::client_ip.keys();
+                for (string ip : ips)
+                {
+                    int socket = connectToSocket(ip, 9090);
+                    cout << "socketCliente " << socket << endl;
+                    string message = ip + ":8085";
+                    Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.size(), message.c_str());
+                    sendPacket(socket, packet);
+                }
             }
             else
             {
                 cout << "Iniciando eleição" << endl;
-                vector<string> ips = global_settings::client_ip.keys();
-                for (string ip : ips){
-                    cout << "notificar cliente em: " << global_settings::client_ip.get(ip) << endl; 
-                }
                 string destino = buscarDestino(origem);
                 lostPrincipalServerConnection = true;
                 startElection(destino);
@@ -208,6 +222,8 @@ void Server::startBackup(string &serverIp, int serverPort, string &principalServ
         client_activity.detach();
         checkHeartbeat.detach();
 
+        // -= 1;
+
         if (serverSocket == 0)
         {
             string ip = getIp();
@@ -220,6 +236,7 @@ void Server::startBackup(string &serverIp, int serverPort, string &principalServ
                     cerr << "Erro ao aceitar conexão." << endl;
                     continue;
                 }
+                lostPrincipalServerConnection = true;
                 cout << "Conexão aceita" << endl;
                 backupProcessElectionPacket(socket_id);
             }
@@ -291,16 +308,6 @@ void Server::processPacket(Packet receivedPacket, int socket_id)
         string username = global_settings::socket_id_dictionary.get(socket_id);
         receiveFile(receivedPacket, socket_id, username, DIR_NAME);
     }
-    else if (receivedPacket.isClientPacket())
-    {
-        string fullMesage = receivedPacket.getMessage();
-        string username = fullMesage.substr(0, fullMesage.find(':'));
-        string socketId = fullMesage.substr(fullMesage.find(':') + 1, fullMesage.size());
-        string userDirFolderName = "dir/" + username;
-        global_settings::client_name_dictionary.insert_or_update(username, stoi(socketId));
-        global_settings::socket_id_dictionary.insert_or_update(stoi(socketId), username);
-        createDir(userDirFolderName.c_str());
-    }
     else if (receivedPacket.isIpPacket())
     {
         string fullMesage = receivedPacket.getMessage();
@@ -327,7 +334,7 @@ void Server::handle_client_activity(int socket_id)
         {
             string fullMessage = receivedPacket.getMessage();
             string username = fullMessage.substr(0, fullMessage.find(':'));
-            string clientIp = fullMessage.substr(fullMessage.find(':'), fullMessage.size());
+            string clientIp = fullMessage.substr(fullMessage.find(':') + 1, fullMessage.size());
 
             bool success = global_settings::connect_client(socket_id, username, clientIp);
             std::string message = success ? "Conexão bem-sucedida." : "Erro ao conectar.";
@@ -349,6 +356,7 @@ void Server::handle_client_activity(int socket_id)
             }
             else
             {
+                cout << "Erro ao conectar" << endl;
                 Packet replyPacket(1, 1, MessageType::DISCONNECTION, Status::ERROR, 0, "");
                 sendPacket(socket_id, replyPacket);
                 break;
@@ -434,7 +442,7 @@ void Server::handle_client_activity(int socket_id)
         else if (receivedPacket.isConnectionServer())
         {
             string serverIp = receivedPacket.getMessage();
-            cout << "ip " << serverIp << endl;
+            cout << "ipa " << serverIp << endl;
             bool success = global_settings::connect_server(socket_id, serverIp);
             std::string message = success ? "Conexão bem-sucedida do servidor secundário" : "Erro ao conectar.";
 
@@ -450,21 +458,10 @@ void Server::handle_client_activity(int socket_id)
                 break;
             }
 
-            vector<string> clientUserNames = global_settings::client_name_dictionary.keys();
-            for (string clientUsername : clientUserNames)
-            {
-                sendClientInfo(socket_id, clientUsername, to_string(global_settings::client_name_dictionary.get(clientUsername)), MessageType::CLIENT);
-            }
-
-            vector<int> sockets = global_settings::socket_id_dictionary.keys();
-            for (int socket : sockets)
-            {
-                sendClientInfo(socket_id, to_string(socket), global_settings::socket_id_dictionary.get(socket), MessageType::SOCKET);
-            }
             vector<string> ips = global_settings::client_ip.keys();
             for (string ip : ips)
             {
-                 sendClientInfo(socket_id, ip, ip, MessageType::IP);
+                sendClientInfo(socket_id, ip, ip, MessageType::IP);
             }
         }
         else if (receivedPacket.isClientPacket())
@@ -477,15 +474,6 @@ void Server::handle_client_activity(int socket_id)
             global_settings::client_name_dictionary.insert_or_update(username, qtd);
             string dirName = "dir/" + username;
             createDir(dirName.c_str());
-        }
-        else if (receivedPacket.isSocketPacket())
-        {
-            string fullMessage = receivedPacket.getMessage();
-            string socketId = fullMessage.substr(0, fullMessage.find(':'));
-            string username = fullMessage.substr(fullMessage.find(':') + 1, fullMessage.size());
-            // cout << "Recebido socket: " << fullMessage << endl;
-            int socketIdInt = std::stoi(socketId);
-            global_settings::socket_id_dictionary.insert_or_update(socketIdInt, username);
         }
     }
     close(socket_id);

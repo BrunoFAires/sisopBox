@@ -18,7 +18,7 @@ private:
     bool hasNewServer = false;
     string ip;
     int porta;
-    int totalBackupServers = 2;
+    int totalBackupServers = 3;
     int electionSocket = 0;
 
     vector<thread> clientThreads;

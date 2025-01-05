@@ -95,8 +95,11 @@ void Client::run()
 
     thread watcherThread1(&Notify::init, &notify);
     thread watcherThread2(&Client::sync, this);
+    thread watcherThread3(&Client::cli, this);
+
     watcherThread1.join();
     watcherThread2.join();
+    watcherThread3.join();
 }
 
 void Client::startDeamon()

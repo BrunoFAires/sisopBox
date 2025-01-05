@@ -23,13 +23,6 @@ int main(int argc, char *argv[])
     {
         Client client(username, clientIp, serverIP, serverPort);
         client.run();
-
-
-        thread watcherThread3(&Client::cli, &client);
-        
-        
-\
-        watcherThread3.join();
     
     }
     catch (runtime_error &e)

@@ -11,6 +11,7 @@
 #include <Packet.h>
 #include <Service.h>
 #include <thread>
+#include "Notify.h"
 
 #define DIR_NAME "sync_dir"
 
@@ -42,9 +43,8 @@ Client::~Client()
 void Client::connectToServer()
 {
     cout << "serverIP: " << serverIP << " server port " << serverPort << endl;
-    
-    int newClientSocket = connectToSocket(serverIP, serverPort);
 
+    int newClientSocket = connectToSocket(serverIP, serverPort);
 
     string message = username + ":" + ip;
 
@@ -91,6 +91,12 @@ void Client::run()
     createSyncDir();
     createClientDownloadDir();
     connectToServer();
+    Notify notify(this);
+
+    thread watcherThread1(&Notify::init, &notify);
+    thread watcherThread2(&Client::sync, this);
+    watcherThread1.join();
+    watcherThread2.join();
 }
 
 void Client::startDeamon()

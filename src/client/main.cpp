@@ -23,16 +23,12 @@ int main(int argc, char *argv[])
     {
         Client client(username, clientIp, serverIP, serverPort);
         client.run();
-        Notify notify(&client);
 
 
-        thread watcherThread1(&Notify::init, &notify);
-        thread watcherThread2(&Client::sync, &client);
         thread watcherThread3(&Client::cli, &client);
         
         
-        watcherThread1.join();
-        watcherThread2.join();
+\
         watcherThread3.join();
     
     }

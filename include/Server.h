@@ -33,6 +33,7 @@ private:
     void backupProcessElectionPacket(int socket_id);
     void checkLastHeartbeat(int socket_id);
     void startElection(string destination);
+    void finishBakcupThread(Packet packet, int socket);
 
 public:
     Server();

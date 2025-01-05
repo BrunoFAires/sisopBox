@@ -1,6 +1,7 @@
 #include "Server.h"
 #include <iostream>
 #include <string.h>
+#include <thread>
 
 using namespace std;
 
@@ -36,7 +37,10 @@ int main(int argc, char *argv[])
         string principalServerIp = argv[4];
         int principalServerPort = stoi(argv[5]);
 
-        server.startBackup(ip, porta, principalServerIp, principalServerPort);
+        int newClientSocket = 0;
+        std::thread client_activity([&server, &ip, &porta, &principalServerIp, &principalServerPort, newClientSocket]()
+                                    { server.startBackup(ip, porta, principalServerIp, principalServerPort); });
+        client_activity.join();
     }
     else
     {

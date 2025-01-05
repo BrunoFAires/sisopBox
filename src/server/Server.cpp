@@ -109,6 +109,8 @@ void Server::backupProcessElectionPacket(int socket_id)
         if (receivedPacket.isElected())
         {
             string ip = getIp();
+            totalBackupServers--;
+            lostPrincipalServerConnection = false;
             string message = receivedPacket.getMessage();
             string destinationIp = message.substr(0, message.find(':'));
             string destinationPort = message.substr(message.find(':') + 1, message.size());
@@ -186,7 +188,7 @@ void Server::checkLastHeartbeat(int socket_id)
             string porta = to_string(getPorta());
             string origem = ip + ":" + porta;
             cout << "Servidor primário desconectado" << endl;
-            if (totalBackupServers == 1)
+            if (totalBackupServers == 2)
             {
                 cout << "Único servidor secundário, fui eleito" << endl;
                 std::thread startThread([this, ip]()
@@ -199,6 +201,7 @@ void Server::checkLastHeartbeat(int socket_id)
                     cout << "socketCliente " << socket << endl;
                     string message = this->ip + ":8085";
                     Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.size(), message.c_str());
+                    sleep(1);
                     sendPacket(socket, packet);
                 }
             }
@@ -231,6 +234,13 @@ void Server::startBackup(string &serverIp, int serverPort, string &principalServ
     if (!receivedPacket.isStatusError())
     {
         createDir(DIR_NAME);
+
+        if (hasNewServer)
+        {
+            isParticipant = false;
+            lastHeartbeat = chrono::steady_clock::now();
+            lostPrincipalServerConnection = false;
+        }
 
         std::thread client_activity([this, newClientSocket]()
                                     { this->backupReceivePacket(newClientSocket); });
@@ -431,7 +441,7 @@ void Server::handle_client_activity(int socket_id)
             remove(path.c_str());
             if (syncDeviceSocket)
             {
-               sendPacket(*syncDeviceSocket, receivedPacket);
+                sendPacket(*syncDeviceSocket, receivedPacket);
             }
 
             vector<string> secundaryIps = global_settings::servers.keys();

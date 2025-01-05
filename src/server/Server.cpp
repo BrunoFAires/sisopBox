@@ -108,15 +108,15 @@ void Server::backupProcessElectionPacket(int socket_id)
 
         if (receivedPacket.isElected())
         {
+
+            totalBackupServers -= 1;
             string ip = getIp();
-            totalBackupServers--;
             lostPrincipalServerConnection = false;
             string message = receivedPacket.getMessage();
             string destinationIp = message.substr(0, message.find(':'));
             string destinationPort = message.substr(message.find(':') + 1, message.size());
             hasNewServer = true;
             cout << "Servidor primário reconectado" << endl;
-            close(serverSocket);
             startBackup(ip, getPorta(), destinationIp, 8085); // Mudar para 8080 no lab
         }
         else if (receivedPacket.isVoteElection())
@@ -195,6 +195,7 @@ void Server::checkLastHeartbeat(int socket_id)
                                         { this->start(ip, 8085); });
                 startThread.detach();
                 vector<string> ips = global_settings::client_ip.keys();
+                sleep(1);
                 for (string ip : ips)
                 {
                     int socket = connectToSocket(ip, 9090);
@@ -240,6 +241,7 @@ void Server::startBackup(string &serverIp, int serverPort, string &principalServ
             isParticipant = false;
             lastHeartbeat = chrono::steady_clock::now();
             lostPrincipalServerConnection = false;
+            hasNewServer = false;
         }
 
         std::thread client_activity([this, newClientSocket]()
@@ -348,6 +350,7 @@ void Server::processPacket(Packet receivedPacket, int socket_id)
         string fullMessage = receivedPacket.getMessage();
         string username = fullMessage.substr(0, fullMessage.find(':'));
         string qtd_str = fullMessage.substr(fullMessage.find(':') + 1, fullMessage.size());
+        cout << "Recebido username: " << fullMessage << endl;
         int qtd = stoi(qtd_str);
         global_settings::client_name_dictionary.insert_or_update(username, qtd);
         string dirName = "dir/" + username;
@@ -421,6 +424,9 @@ void Server::handle_client_activity(int socket_id)
                 string dirName = "dir/" + username;
                 sendFile(*syncDeviceSocket, dirName, filename, true, false);
             }
+
+            // Tornar isso uma função, por hora replicar nos demais ifs
+            // pensando bem tem muita coisa pra refatorar nesse método.
 
             vector<string> secundaryIps = global_settings::servers.keys();
             for (string secundaryIp : secundaryIps)

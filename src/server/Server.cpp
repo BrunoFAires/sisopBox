@@ -191,7 +191,7 @@ void Server::checkLastHeartbeat(int socket_id)
             cout << "Servidor primário desconectado" << endl;
             if (totalBackupServers == 2)
             {
-                cout << "Único servidor secundário, fui eleito" << endl;
+                cout << "Fui eleito" << endl;
                 std::thread startThread([this, ip]()
                                         { this->start(ip, 8085); });
                 startThread.detach();
@@ -200,7 +200,7 @@ void Server::checkLastHeartbeat(int socket_id)
                 for (string ip : ips)
                 {
                     int socket = connectToSocket(ip, 9090);
-                    cout << "socketCliente " << socket << endl;
+                    //cout << "socketCliente " << socket << endl;
                     string message = this->ip + ":8085";
                     Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.size(), message.c_str());
                     sleep(1);
@@ -343,7 +343,7 @@ void Server::processPacket(Packet receivedPacket, int socket_id)
         string fullMesage = receivedPacket.getMessage();
         string socketId = fullMesage.substr(0, fullMesage.find(':'));
         string ip = fullMesage.substr(fullMesage.find(':') + 1, fullMesage.size());
-        cout << "ip " << ip << endl;
+        //cout << "ip " << ip << endl;
         global_settings::client_ip.insert_or_update(ip, ip);
     }
     else if (receivedPacket.isClientPacket())
@@ -351,7 +351,7 @@ void Server::processPacket(Packet receivedPacket, int socket_id)
         string fullMessage = receivedPacket.getMessage();
         string username = fullMessage.substr(0, fullMessage.find(':'));
         string qtd_str = fullMessage.substr(fullMessage.find(':') + 1, fullMessage.size());
-        cout << "Recebido username: " << fullMessage << endl;
+        //cout << "Recebido username: " << fullMessage << endl;
         int qtd = stoi(qtd_str);
         string dirName = "dir/" + username;
         createDir(dirName.c_str());
@@ -482,7 +482,7 @@ void Server::handle_client_activity(int socket_id)
         else if (receivedPacket.isConnectionServer())
         {
             string serverIp = receivedPacket.getMessage();
-            cout << "ipa " << serverIp << endl;
+            //cout << "ipa " << serverIp << endl;
             bool success = global_settings::connect_server(socket_id, serverIp);
             std::string message = success ? "Conexão bem-sucedida do servidor secundário" : "Erro ao conectar.";
 

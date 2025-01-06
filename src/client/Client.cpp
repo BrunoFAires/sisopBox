@@ -126,14 +126,13 @@ void Client::startDeamon()
         this->serverIP = newServerIp;
         this->serverPort = stoi(newServerPort);
 
-        cout << "Conexão aceita" << endl;
         restart = true;
 
         close(socket_id);
 
         connectToServer();
         thread watcherThread2(&Client::sync, this);
-        watcherThread2.join();
+        watcherThread2.detach();
     }
 }
 

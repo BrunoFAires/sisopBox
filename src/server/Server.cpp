@@ -164,6 +164,7 @@ void Server::backupProcessElectionPacket(int socket_id)
                     Packet packet(1, 1, MessageType::CONNECTION, Status::SUCCESS, message.size(), message.c_str());
                     sleep(1);
                     sendPacket(socket, packet);
+                    close(socket);
                 }
                 finishfinish.join();
                 startThread.join();
@@ -352,7 +353,6 @@ void Server::processPacket(Packet receivedPacket, int socket_id)
         string qtd_str = fullMessage.substr(fullMessage.find(':') + 1, fullMessage.size());
         cout << "Recebido username: " << fullMessage << endl;
         int qtd = stoi(qtd_str);
-        global_settings::client_name_dictionary.insert_or_update(username, qtd);
         string dirName = "dir/" + username;
         createDir(dirName.c_str());
     }

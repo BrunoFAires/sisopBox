@@ -17,6 +17,8 @@
 
 using namespace std;
 
+bool restart = false;
+
 Client::Client() : clientSocket(-1)
 {
     clientSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -43,6 +45,7 @@ Client::~Client()
 void Client::connectToServer()
 {
     cout << "serverIP: " << serverIP << " server port " << serverPort << endl;
+    restart = false;
 
     int newClientSocket = connectToSocket(serverIP, serverPort);
 
@@ -124,10 +127,13 @@ void Client::startDeamon()
         this->serverPort = stoi(newServerPort);
 
         cout << "Conexão aceita" << endl;
+        restart = true;
 
         close(socket_id);
 
         connectToServer();
+        thread watcherThread2(&Client::sync, this);
+        watcherThread2.join();
     }
 }
 
@@ -145,7 +151,7 @@ void Client::sync()
 {
     Packet packet(0, 1, MessageType::FETCH, Status::SUCCESS, username.size(), username.c_str());
     sendPacket(clientSocket, packet);
-    while (true)
+    while (!restart)
     {
         Packet receivedPacket = receivePacket(clientSocket);
         if (receivedPacket.isSyncPacket())
